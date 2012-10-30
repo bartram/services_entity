@@ -1,97 +1,88 @@
 <?php
 
 /**
- * Prepare data structrure recursively and using metadata wrapper to retrieve
- * the hierarchical properties.
+ * Implements hook_menu()
  */
-function services_entity_prepare_structure(EntityStructureWrapper $wrapper, array $properties = array()) {
-  if (empty($properties)) {
-    // By default, expand all the non-computed properties.
-    $properties = array();
-    foreach ($wrapper->getPropertyInfo() as $property_name => $property_info) {
-      if (empty($property_info['computed'])) {
-        $properties[$property_name] = $property_name;
-      }
-    }
-  }
-
-  return _services_entity_prepare_structure($wrapper, $properties);
+function services_entity_menu() {
+  $items = array();
+  
+  $items['admin/structure/services/entity'] = array(
+    'title' => 'Services Entity Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('services_entity_settings_form'),
+    'access arguments' => array('administer services'),
+  );
+  
+  return $items;
 }
 
-function _services_entity_prepare_structure(EntityMetadataWrapper $wrapper, array $fields) {
-  $result = array();
-
-  foreach ($fields as $property_name => $sub_properties) {
-    $property_wrapper = $wrapper->$property_name;
-    $type = $property_wrapper->type();
-    $info = $property_wrapper->info();
-
-    if (!empty($info['field'])) {
-      $field_info = field_info_field($property_name);
-      $translatable = !empty($field_info['translatable']) ? 1 : 0;
-      $cardinality = $field_info['cardinality'];
-
-      // Fetch the list of actual languages for this field in the underlying entity.
-      $underlying_entity = $wrapper->value();
-      $languages = isset($underlying_entity->$property_name) ? array_keys($underlying_entity->$property_name) : array();
-    }
-    else {
-      $translatable = 0;
-      $cardinality = $type == 'list' || entity_property_list_extract_type($type) ? -1 : 1;
-      $languages = array(LANGUAGE_NONE);
-    }
-
-    // Remove the inner list layer.
-    if ($sub_type = entity_property_list_extract_type($type)) {
-      $type = $sub_type;
-      $is_list = TRUE;
-    }
-    else {
-      $is_list = FALSE;
-    }
-
-    // Now iterate on the list of languages to fetch the values.
-    $property_result = array();
-    foreach ($languages as $language) {
-      $wrapper->language($language);
-      $property_wrapper = $wrapper->$property_name;
-
-      foreach ($is_list ? $property_wrapper : array($property_wrapper) as $index => $sub_wrapper) {
-        if ($sub_wrapper instanceof EntityStructureWrapper) {
-          // Required because Entity API doesn't propagate the language for us.
-          $sub_wrapper->language($language);
-        }
-
-        if (is_array($sub_properties)) {
-          $property_result[$language][$index] = services_entity_prepare_structure($sub_wrapper, $sub_properties);
-        }
-        else {
-          $value = $sub_wrapper->raw();
-          if (is_array($value)) {
-            $property_result[$language][$index] = $value;
-          }
-          else {
-            $property_result[$language][$index] = array(
-              'value' => $type == 'boolean' && !$value ? '0' : $value,
-            );
-          }
-        }
-      }
-    }
-
-    if (count($property_result)) {
-      $result[$property_name] = $property_result + array(
-        'type' => $type,
-        'cardinality' => $cardinality,
-        'translatable' => $translatable,
-      );
-    }
-    else {
-      $result[$property_name] = NULL;
-    }
-
+/**
+ * Admin settings form for picking the class for entity resources.
+ */
+function services_entity_settings_form($form, $form_state) {
+  $resources = services_entity_get_resource_info();
+  foreach($resources as $id => $resource) {
+    $options[$resource['class']] = '<strong>' . $resource['title'] . '</strong><div>' . $resource['description'] . '</div>';
   }
+  
+  $form['services_entity_resource_class'] = array(
+    '#title' => 'Entity Resource Class',
+    '#description' => 'Select which Resource Controller to use to process the entities.',
+    '#type' => 'radios',
+    '#options' => $options,
+    '#default_value' => variable_get('services_entity_resource_class', 'ServicesEntityResourceController'),
+  );
+  
+  $form['services_entity_max_pagesize'] = array(
+    '#title' => 'Maximum Page Size',
+    '#description' => 'Enter the maximum number of items that can be returned per page of an index.',
+    '#type' => 'textfield',
+    '#default_value' => variable_get('services_entity_max_pagesize', 100),
+  );
+  return system_settings_form($form);
+}
 
+/**
+ * Returns info about all defined resources.
+ *
+ * @param string $resource
+ *   By default null, else the info for the given resource will be returned.
+ */
+function services_entity_get_resource_info($resource = NULL) {
+  $info = &drupal_static(__FUNCTION__);
+  if (!isset($info)) {
+    $info = module_invoke_all('services_entity_resource_info');
+    drupal_alter('services_entity_resource_info', $info);
+  }
+  if (!empty($resource)) {
+    return $info[$resource];
+  }
+  return $info;
+}
+
+/**
+ * Implements hook_entity_resource_info().
+ *
+ * Provides resources for all entity types.
+ */
+function services_entity_services_entity_resource_info() {
+  $result = array();
+  
+  $result['generic'] = array(
+    'title' => 'Generic Entity Processor',
+    'description' => 'Acts as a generic wrapper for entities. Data structures are exactly what they are in Drupal.',
+    'class' => 'ServicesEntityResourceController',
+  );
+  $result['clean'] = array(
+    'title' => 'Clean Entity Processor',
+    'description' => 'An entity wrapper that strips out "drupalisms" such as the array structure and field_ prefixes.',
+    'class' => 'ServicesEntityResourceControllerClean',
+  );
+  $result['recurse'] = array(
+    'title' => 'Recursive Entity Processor',
+    'description' => 'Allows recursively accessing sub resources such as a taxonomy item on a node.',
+    'class' => 'ServicesEntityResourceControllerRecurse',
+  );
   return $result;
 }
 

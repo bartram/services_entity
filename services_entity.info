@@ -6,3 +6,7 @@ dependencies[] = services
 dependencies[] = entity
 
 files[] = tests/services_entity.test
+files[] = plugins/services_entity_interface.inc
+files[] = plugins/services_entity_resource.inc
+files[] = plugins/services_entity_resource_clean.inc
+files[] = plugins/services_entity_resource_recurse.inc
