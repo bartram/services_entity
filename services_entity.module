@@ -88,6 +88,27 @@ function services_entity_services_entity_resource_info() {
 }
 
 /**
+ * Implements hook_services_resources_alter().
+ */
+function services_entity_services_resources_alter(&$resources) {
+  // For entities that the services module already implements, borrow any operations, actions and relationships.
+  foreach($resources as $name => $resource) {
+    if (preg_match('/^entity_/', $name)) {
+      $orig_name = preg_replace('/^entity_/', '', $name);
+      if (isset($resources[$orig_name])) {
+        foreach($resources[$orig_name] as $type => $info) {
+          foreach($info as $id => $op) {
+            if (!isset($resources[$name][$type][$id])) {
+              $resources[$name][$type][$id] = $op;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
  * Implements hook_entity_query_alter().
  *
  * Convert EntityFieldQuerys on taxonomy terms that have an entity condition
