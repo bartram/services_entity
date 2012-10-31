@@ -1,0 +1,5 @@
+name = Services Entity Reference
+description = Automatically create relationships based on entity reference fields.
+package = Services
+core = 7.x
+dependencies[] = services_entity

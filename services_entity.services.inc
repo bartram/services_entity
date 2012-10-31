@@ -11,6 +11,7 @@ function services_entity_services_resources() {
       $resources["entity_$entity_type"]['create'] = array(
         'file' => array('type' => 'inc', 'module' => 'services_entity', 'name' => 'services_entity.resources'),
         'callback' => '_services_entity_resource_create',
+        'description' => "Creates a $entity_type",
         'args' => array(
           array(
             'name' => 'entity_type',
@@ -35,6 +36,7 @@ function services_entity_services_resources() {
     $resources["entity_$entity_type"]['retrieve'] = array(
       'file' => array('type' => 'inc', 'module' => 'services_entity', 'name' => 'services_entity.resources'),
       'callback' => '_services_entity_resource_retrieve',
+      'description' => "Retrieves a $entity_type",
       'args' => array(
         array(
           'name' => 'entity_type',
@@ -47,7 +49,7 @@ function services_entity_services_resources() {
           'optional' => FALSE,
           'source' => array('path' => 0),
           'type' => 'int',
-          'description' => 'The ID of the entity to get or a unique property of the entity in the form property:value',
+          'description' => 'The ID of the entity to get',
         ),
         array(
           'name' => 'fields',
@@ -67,6 +69,7 @@ function services_entity_services_resources() {
       $resources["entity_$entity_type"]['update'] = array(
         'file' => array('type' => 'inc', 'module' => 'services_entity', 'name' => 'services_entity.resources'),
         'callback' => '_services_entity_resource_update',
+        'description' => "Updates a $entity_type",
         'args' => array(
           array(
             'name' => 'entity_type',
@@ -99,6 +102,7 @@ function services_entity_services_resources() {
       $resources["entity_$entity_type"]['delete'] = array(
         'file' => array('type' => 'inc', 'module' => 'services_entity', 'name' => 'services_entity.resources'),
         'callback' => '_services_entity_resource_delete',
+        'description' => "Deletes a $entity_type",
         'args' => array(
           array(
             'name' => 'entity_type',
@@ -123,6 +127,7 @@ function services_entity_services_resources() {
     $resources["entity_$entity_type"]['index'] = array(
       'file' => array('type' => 'inc', 'module' => 'services_entity', 'name' => 'services_entity.resources'),
       'callback' => '_services_entity_resource_index',
+      'description' => "Returns a list of $entity_type",
       'args' => array(
         array(
           'name' => 'entity_type',

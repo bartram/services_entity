@@ -78,11 +78,12 @@ function services_entity_services_entity_resource_info() {
     'description' => 'An entity wrapper that strips out "drupalisms" such as the array structure and field_ prefixes.',
     'class' => 'ServicesEntityResourceControllerClean',
   );
-  $result['recurse'] = array(
+  // Once this processor works better it will be readded. Either that or removed.
+/*  $result['recurse'] = array(
     'title' => 'Recursive Entity Processor',
     'description' => 'Allows recursively accessing sub resources such as a taxonomy item on a node.',
     'class' => 'ServicesEntityResourceControllerRecurse',
-  );
+  );*/
   return $result;
 }
 
