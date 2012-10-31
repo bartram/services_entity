@@ -15,6 +15,7 @@ function services_entity_services_resources() {
         'args' => array(
           array(
             'name' => 'entity_type',
+            'optional' => TRUE,  // Otherwise throws an error
             'default value' => $entity_type,
             'type' => 'string',
             'description' => 'The type of the entity to create',
@@ -40,6 +41,7 @@ function services_entity_services_resources() {
       'args' => array(
         array(
           'name' => 'entity_type',
+          'optional' => TRUE,  // Otherwise throws an error
           'default value' => $entity_type,
           'type' => 'string',
           'description' => 'The type of the entity to get',
@@ -73,6 +75,7 @@ function services_entity_services_resources() {
         'args' => array(
           array(
             'name' => 'entity_type',
+            'optional' => TRUE,  // Otherwise throws an error
             'default value' => $entity_type,
             'type' => 'string',
             'description' => 'The type of the entity to update',
@@ -131,6 +134,7 @@ function services_entity_services_resources() {
       'args' => array(
         array(
           'name' => 'entity_type',
+          'optional' => TRUE,  // Otherwise throws an error
           'default value' => $entity_type,
           'type' => 'string',
           'description' => 'The type of the entity to get',
