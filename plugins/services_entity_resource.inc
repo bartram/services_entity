@@ -19,7 +19,7 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
       // Retrieve, Delete, Update.
       list($entity_type, $entity_id) = $args;
 
-      $entity = $this->load_entity($entity_type, $entity_id);
+      $entity = entity_load_single($entity_type, $entity_id);
 
       // Pass the entity to the access control.
       return entity_access($op, $entity_type, $entity);
@@ -27,11 +27,15 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
   }
 
   public function create($entity_type, array $values) {
-    return entity_create($entity_type, $values);
+    $entity = entity_create($entity_type, $values);
+    if (!entity_save($entity_type, $entity)) {
+      services_error('Error saving entity.', 406);
+    }
+    return $entity->id;
   }
 
   public function retrieve($entity_type, $entity_id, $fields) {
-    $entity = $this->load_entity($entity_type, $entity_id);
+    $entity = entity_load_single($entity_type, $entity_id);
     if (!$entity) {
       services_error('Entity not found', 404);
     }
@@ -39,13 +43,17 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
   }
 
   public function update($entity_type, $entity_id, array $values) {
-    return entity_save($entity_type, $values);
+    $entity = entity_metadata_wrapper($entity_type, (object) $values);
+    if ($entity_id == $entity->getIdentifier()) {
+      return $entity->save();
+    }
+    else {
+      services_error('Invalid Entity Identifier. You can only update the entity referenced in the URL.', 406);
+    }
   }
   
   public function delete($entity_type, $entity_id) {
-    if (!entity_delete($this->entityType, $id)) {
-      services_error('No entity to delete', 406);
-    }
+    entity_delete($entity_type, $entity_id);
   }  
 
   public function index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction) {
@@ -82,15 +90,6 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     }
 
     return $return;
-  }
-  
-  // Load an entity.
-  protected function load_entity($entity_type, $entity_id) {
-    $entities = entity_load($entity_type, array($entity_id));
-    if (empty($entities)) {
-      return FALSE;
-    }
-    return reset($entities);
   }
   
   // Limit fields to the list provided.
