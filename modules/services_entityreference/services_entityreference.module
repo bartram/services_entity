@@ -19,7 +19,7 @@ function services_entityreference_services_resources() {
           foreach($field['settings']['handler_settings']['target_bundles'] as $target_entity => $target_bundle) {
             $name = services_entityreference_format_plural($entity_type);
             $resources["entity_$target_entity"]['relationships'][$name] = array(
-              'help'                    => t("Display an index of $name that have an entity reference to a $target_entity."),
+              'description'                    => t("Display an index of $name that have a reference to a $target_entity."),
               'access callback' => '_services_entity_resource_access',
               'access callback file' => array('type' => 'inc', 'module' => 'services_entity', 'name' => 'services_entity.resources'),
               'access arguments' => array('index'),
@@ -41,7 +41,7 @@ function services_entityreference_services_resources() {
                   'description' => 'The type of the entity to get',
                 ),
                 array(
-                  'name' => 'target_id',
+                  'name' => $target_entity . '_id',
                   'optional' => FALSE,
                   'source' => array('path' => 0),
                   'type' => 'int',
@@ -56,7 +56,7 @@ function services_entityreference_services_resources() {
                   'name' => 'fields',
                   'optional' => TRUE,
                   'type' => 'string',
-                  'description' => 'The fields to get.',
+                  'description' => 'A comma separated list of fields to get.',
                   'default value' => '*',
                   'source' => array('param' => 'fields'),
                 ),
@@ -69,7 +69,7 @@ function services_entityreference_services_resources() {
                   'name' => 'parameters',
                   'optional' => TRUE,
                   'type' => 'array',
-                  'description' => 'Parameters array',
+                  'description' => 'Filter parameters array such as param[title]="test"',
                   'default value' => array(),
                   'source' => array('param' => 'param'),
                 ),
@@ -121,7 +121,7 @@ function services_entityreference_services_resources() {
                   'name' => 'direction',
                   'optional' => TRUE,
                   'type' => 'string',
-                  'description' => 'Direction of the sort.',
+                  'description' => 'Direction of the sort. ASC or DESC.',
                   'default value' => 'ASC',
                   'source' => array('param' => 'direction'),
                 ),
