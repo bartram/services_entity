@@ -14,7 +14,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
   
   public function create($entity_type, array $values) {
     $property_info = entity_get_all_property_info($entity_type);
-    $values = $this->transform_values($property_info, $values);
+    $values = $this->transform_values($entity_type, $property_info, $values);
     try {
       $wrapper = entity_property_values_create_entity($entity_type, $values);
     }
@@ -49,7 +49,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
 
   public function update($entity_type, $entity_id, array $values) {
     $property_info = entity_get_all_property_info($entity_type);
-    $values = $this->transform_values($property_info, $values);
+    $values = $this->transform_values($entity_type, $property_info, $values);
     try {
       $wrapper = entity_metadata_wrapper($entity_type, $entity_id);
       foreach ($values as $name => $value) {
@@ -64,7 +64,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
   
   public function index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction) {
     $property_info = entity_get_all_property_info($entity_type);
-    $parameters = $this->transform_values($property_info, $parameters);
+    $parameters = $this->transform_values($entity_type, $property_info, $parameters);
     $sort = (isset($property_info['field_' . $sort]))?'field_' . $sort:$sort;
     $entities = parent::index($entity_type, '*', $parameters, $page, $pagesize, $sort, $direction);
     foreach($entities as $entity) {
@@ -108,6 +108,17 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
       }
       catch (EntityMetadataWrapperException $e) {
         // A property causes problems - ignore that.
+      }
+    }
+    // If bundle = entity_type, don't send it.
+    if (method_exists($wrapper, 'entityInfo')) {
+      $entity_info = $wrapper->entityInfo();
+      if (isset($entity_info['bundle keys'])) {
+        foreach ($entity_info['bundle keys'] as $bundle_key) {
+          if (array_key_exists($bundle_key, $data) && $data[$bundle_key] == $wrapper->type()) {
+            unset($data[$bundle_key]);
+          }
+        }
       }
     }
     return $data;
@@ -161,12 +172,27 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
    * @param type $values
    * @return type
    */
-  protected function transform_values($property_info, $values) {
+  protected function transform_values($entity_type, $property_info, $values) {
+    // Default the bundle to the entity_type. This allows eck types that don't use custom bundles to not have to specify the bundle.
+    $entity_info = entity_get_info($entity_type);
+    if (isset($entity_info['bundle keys'])) {
+      foreach ($entity_info['bundle keys'] as $bundle_key) {
+        if (!array_key_exists($bundle_key, $values)) {
+          $values[$bundle_key] = $entity_type;
+        }
+      }
+    }
+    
     foreach($values as $key => $value) {
+      // Handle Resource references so we can pass pack the object.
+      if (is_array($value) && isset($value['id'])) {
+        $values[$key] = $value['id'];
+      }
+      // Check if this is actually a field_ value
       if (isset($property_info['field_' . $key])) {
         $values['field_' . $key] = $values[$key];
         unset($values[$key]);
-      }      
+      }
     }
     return $values;
   }  
