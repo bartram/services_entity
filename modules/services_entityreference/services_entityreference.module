@@ -15,7 +15,7 @@ function services_entityreference_services_resources() {
     foreach ($type_bundles as $bundle => $bundle_instances) {
       foreach ($bundle_instances as $field_name => $instance) {
         $field = field_info_field($field_name);
-        if ($field['type'] == 'entityreference' && $field['settings']['handler'] == 'base') {
+        if ($field['type'] == 'entityreference' && in_array($field['settings']['handler'], array('base', 'og'))) {
           foreach($field['settings']['handler_settings']['target_bundles'] as $target_entity => $target_bundle) {
             $name = services_entityreference_format_plural($entity_type);
             $resources["entity_$target_entity"]['relationships'][$name] = array(
