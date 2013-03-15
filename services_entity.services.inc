@@ -7,7 +7,7 @@ function services_entity_services_resources() {
   $resources = array();
 
   foreach (entity_get_info() as $entity_type => $info) {
-    if (module_exists('entity') && entity_type_supports($entity_type, 'create')) {
+    if (entity_type_supports($entity_type, 'create')) {
       $resources["entity_$entity_type"]['create'] = array(
         'file' => array('type' => 'inc', 'module' => 'services_entity', 'name' => 'services_entity.resources'),
         'callback' => '_services_entity_resource_create',
@@ -67,7 +67,7 @@ function services_entity_services_resources() {
       'access arguments append' => TRUE,
     );
 
-    if (module_exists('entity') && entity_type_supports($entity_type, 'save')) {
+    if (entity_type_supports($entity_type, 'save')) {
       $resources["entity_$entity_type"]['update'] = array(
         'file' => array('type' => 'inc', 'module' => 'services_entity', 'name' => 'services_entity.resources'),
         'callback' => '_services_entity_resource_update',
@@ -101,7 +101,7 @@ function services_entity_services_resources() {
       );
     }
 
-    if (module_exists('entity') && entity_type_supports($entity_type, 'delete')) {
+    if (entity_type_supports($entity_type, 'delete')) {
       $resources["entity_$entity_type"]['delete'] = array(
         'file' => array('type' => 'inc', 'module' => 'services_entity', 'name' => 'services_entity.resources'),
         'callback' => '_services_entity_resource_delete',
