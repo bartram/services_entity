@@ -5,6 +5,9 @@
  */
 class ServicesEntityResourceController implements ServicesResourceControllerInterface {
   
+  /**
+   * Implements ServicesResourceControllerInterface::access().
+   */
   public function access($op, $args) {
     if ($op == 'index') {
       // Access is handled at the query level.
@@ -26,6 +29,9 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     }
   }
 
+  /**
+   * Implements ServicesResourceControllerInterface::create().
+   */
   public function create($entity_type, array $values) {
     $entity = entity_create($entity_type, $values);
     if (!entity_save($entity_type, $entity)) {
@@ -34,6 +40,9 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     return $entity->id;
   }
 
+  /**
+   * Implements ServicesResourceControllerInterface::retrieve().
+   */
   public function retrieve($entity_type, $entity_id, $fields) {
     $entity = entity_load_single($entity_type, $entity_id);
     if (!$entity) {
@@ -42,6 +51,9 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     return $this->limit_fields($entity, $fields);
   }
 
+  /**
+   * Implements ServicesResourceControllerInterface::update().
+   */
   public function update($entity_type, $entity_id, array $values) {
     $entity = entity_metadata_wrapper($entity_type, (object) $values);
     if ($entity_id == $entity->getIdentifier()) {
@@ -52,10 +64,16 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     }
   }
   
+  /**
+   * Implements ServicesResourceControllerInterface::delete().
+   */
   public function delete($entity_type, $entity_id) {
     entity_delete($entity_type, $entity_id);
   }  
 
+  /**
+   * Implements ServicesResourceControllerInterface::index().
+   */
   public function index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction) {
     // Make sure the pagesize is not too large.
     $max_pagesize = variable_get('services_entity_max_pagesize', 100);
@@ -68,12 +86,12 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
         ->range($page * $pagesize, $pagesize);
     
     if (!empty($parameters)) {
-      foreach($parameters as $field => $value) {
+      foreach ($parameters as $field => $value) {
         $this->propertyQueryOperation($entity_type, $query, 'Condition', $field, $value);            
       }
     }
     if ($sort != '') {
-      $direction = ($direction == 'DESC')?'DESC':'ASC'; // Ensure a valid direction
+      $direction = ($direction == 'DESC') ? 'DESC' : 'ASC'; // Ensure a valid direction
       $this->propertyQueryOperation($entity_type, $query, 'OrderBy', $sort, $direction);
     }
 
@@ -85,7 +103,7 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     // Convert to actual entities.
     $entities = entity_load($entity_type, array_keys($result[$entity_type]));
 
-    foreach($entities as $id => $entity) {
+    foreach ($entities as $id => $entity) {
       $return[] = $this->limit_fields($entity, $fields);
     }
 
@@ -98,7 +116,7 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
       return $entity;
     }
     $field_array = explode(',', $fields);
-    foreach($entity as $field => $value) {
+    foreach ($entity as $field => $value) {
       if (!in_array($field, $field_array)) {
         unset($entity->{$field});
       }
