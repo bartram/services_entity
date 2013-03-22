@@ -18,8 +18,12 @@ function services_entityreference_services_resources() {
         if ($field['type'] == 'entityreference' && in_array($field['settings']['handler'], array('base', 'og'))) {
           $target_entity = $field['settings']['target_type'];
           $name = services_entityreference_format_plural($entity_type);
-          $resources["entity_$target_entity"]['relationships'][$name] = array(
-            'description'                    => t("Display an index of $name that have a reference to a $target_entity."),
+          $resources["entity_$target_entity"]['relationships'][$name . '_' . $field_name] = array(
+            'help' => t("Display an index of @referencing entities that have a reference to a @target via field @fieldname.", array(
+              '@referencing'  => $entity_type,
+              '@target'       => $target_entity,
+              '@fieldname'    => $field_name,
+            )),
             'access callback' => '_services_entity_resource_access',
             'access callback file' => array('type' => 'inc', 'module' => 'services_entity', 'name' => 'services_entity.resources'),
             'access arguments' => array('index'),
