@@ -4,7 +4,7 @@
  * Generic controller for entity-bases resources.
  */
 class ServicesEntityResourceController implements ServicesResourceControllerInterface {
-  
+
   /**
    * Implements ServicesResourceControllerInterface::access().
    */
@@ -63,13 +63,13 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
       services_error('Invalid Entity Identifier. You can only update the entity referenced in the URL.', 406);
     }
   }
-  
+
   /**
    * Implements ServicesResourceControllerInterface::delete().
    */
   public function delete($entity_type, $entity_id) {
     entity_delete($entity_type, $entity_id);
-  }  
+  }
 
   /**
    * Implements ServicesResourceControllerInterface::index().
@@ -78,16 +78,16 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     // Make sure the pagesize is not too large.
     $max_pagesize = variable_get('services_entity_max_pagesize', 100);
     $pagesize = ($max_pagesize < $pagesize) ? $max_page_size : $pagesize;
-    
+
     // Build an EFQ based on the arguments.
     $query = new EntityFieldQuery();
     $query
         ->entityCondition('entity_type', $entity_type)
         ->range($page * $pagesize, $pagesize);
-    
+
     if (!empty($parameters)) {
       foreach ($parameters as $field => $value) {
-        $this->propertyQueryOperation($entity_type, $query, 'Condition', $field, $value);            
+        $this->propertyQueryOperation($entity_type, $query, 'Condition', $field, $value);
       }
     }
     if ($sort != '') {
@@ -156,7 +156,7 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     }
     return $entity;
   }
-  
+
   /**
    * Helper function which takes care of distinguishing between fields and
    * entity properties and executes the right EntityFieldQuery function for it.
@@ -206,5 +206,5 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
       }
     }
   }
-  
+
 }

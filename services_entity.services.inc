@@ -142,7 +142,7 @@ function services_entity_services_resources() {
         ),
         /**
          * Fields to return
-         * 
+         *
          * these should be specified in a comma separated list like ?fields=title,created,uid
          */
         array(
@@ -155,7 +155,7 @@ function services_entity_services_resources() {
         ),
         /**
          * Filter parameters
-         * 
+         *
          * these should be specified by ?param[title]=My Title&param[created]=4403305
          */
         array(
@@ -168,7 +168,7 @@ function services_entity_services_resources() {
         ),
         /**
          * Page number
-         * 
+         *
          * A zero based page number like ?page=3 (returns the fourth page)
          */
         array(
@@ -181,7 +181,7 @@ function services_entity_services_resources() {
         ),
         /**
          * Page Size
-         * 
+         *
          * How many records per page to return. ?pagesize=20
          */
         array(
@@ -194,7 +194,7 @@ function services_entity_services_resources() {
         ),
         /**
          * Sort field
-         * 
+         *
          * Which field to sort on. ?sort=created
          */
         array(
@@ -207,7 +207,7 @@ function services_entity_services_resources() {
         ),
         /**
          * Sort Direction
-         * 
+         *
          * Which direction to sort. Possible Values = "ASC|DESC" ?direction=DESC
          */
         array(

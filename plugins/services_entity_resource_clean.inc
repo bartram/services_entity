@@ -1,17 +1,17 @@
 <?php
 /**
- * This class is designed to create a very clean API that integrates with 
- * the services and entity modules. We want to strip all "drupalisms" out 
- * of the API. For example, there should be no [LANGUAGE_NONE][0][value] or 
- * field_ in the API. 
- * 
+ * This class is designed to create a very clean API that integrates with
+ * the services and entity modules. We want to strip all "drupalisms" out
+ * of the API. For example, there should be no [LANGUAGE_NONE][0][value] or
+ * field_ in the API.
+ *
  * It should be possible to create an API that is easily replicated on another
  * system.
- * 
+ *
  * Much of this code is borrowed from restws module.
  */
 class ServicesEntityResourceControllerClean extends ServicesEntityResourceController {
-  
+
   public function create($entity_type, array $values) {
     $property_info = entity_get_all_property_info($entity_type);
     $values = $this->transform_values($entity_type, $property_info, $values);
@@ -41,7 +41,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
     $wrapper->save();
     return $wrapper->getIdentifier();
   }
-  
+
   public function retrieve($entity_type, $entity_id, $fields) {
     $entity = parent::retrieve($entity_type, $entity_id, '*');
     return $this->get_data(entity_metadata_wrapper($entity_type, $entity), $fields);
@@ -61,7 +61,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
     }
     return $wrapper->save();
   }
-  
+
   public function index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction) {
     $property_info = entity_get_all_property_info($entity_type);
     $parameters = $this->transform_values($entity_type, $property_info, $parameters);
@@ -91,7 +91,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
   /**
    * Return the data structure for an entity stripped of all "drupalisms" such as
    * field_ and complex data arrays.
-   * 
+   *
    * @param type $wrapper
    * @return type
    */
@@ -142,7 +142,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
 
   /**
    * Return a resource reference array.
-   * 
+   *
    * @param type $resource
    * @param type $id
    * @return type
@@ -184,7 +184,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
 
   /**
    * Checks for field_ prefix for each field and adds it if necessary.
-   * 
+   *
    * @param type $values
    * @return type
    */
@@ -198,7 +198,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
         }
       }
     }
-    
+
     foreach($values as $key => $value) {
       // Handle Resource references so we can pass pack the object.
       if (is_array($value) && isset($value['id'])) {
@@ -211,5 +211,5 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
       }
     }
     return $values;
-  }  
+  }
 }

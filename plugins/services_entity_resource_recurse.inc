@@ -64,7 +64,7 @@ class ServicesEntityResourceControllerRecurse extends ServicesEntityResourceCont
 
     return $this->postprocess_entities($entities, $query->ordered_results, $fields);
   }
-  
+
   protected function postprocess_entities($entities, $ordered_results, $fields) {
     // Prepare the fields.
     $fields = $this->transform_fields($fields);

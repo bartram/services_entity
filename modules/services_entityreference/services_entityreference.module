@@ -2,12 +2,12 @@
 
 /**
  * Implements hook_services_resources_alter()
- * 
+ *
  * @param type $resources
  */
 function services_entityreference_services_resources() {
   $resources = array();
-  
+
   $instances = field_info_instances();
   $field_types = field_info_field_types();
   $bundles = field_info_bundles();
@@ -191,7 +191,7 @@ function services_entityreference_services_resources() {
       }
     }
   }
-  
+
   return $resources;
 }
 
@@ -202,7 +202,7 @@ function _services_entityreference_relationship_query($entity_type, $field_name,
   $parameters[$field_name] = $target_id;
   $resourceclass = variable_get('services_entity_resource_class', 'ServicesEntityResourceController');
   $resource = new $resourceclass;
-  return $resource->index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction);  
+  return $resource->index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction);
 }
 
 /**
@@ -236,6 +236,6 @@ function services_entityreference_format_plural($name) {
 
   // Allow other modules to change the name if they want to.
   drupal_alter('services_entityreference_format_plural', $name);
-  
+
   return $name;
 }

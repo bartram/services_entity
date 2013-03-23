@@ -75,7 +75,7 @@ interface ServicesResourceControllerInterface {
   public function delete($entity_type, $entity_id);
 
   /**
-   * 
+   *
    * @param string $entity_type
    *   The type of the resource that should be deleted.
    * @param array $filters
