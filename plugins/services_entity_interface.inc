@@ -86,5 +86,27 @@ interface ServicesResourceControllerInterface {
    *   The number of items on that pages to be returned.
    */
   public function index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction);
+
+  /**
+   * Get the value of a single field.
+   *
+   * @param $entity_type
+   *  The entity type.
+   * @param $entity_id
+   *  The id of the entity on which the field values are present.
+   * @param $field_name
+   *  The name of the field to retrieve the value of.
+   * @param $fields
+   *  A comma-separated list of the fields to return on the returned entities, or
+   *  '*' to return all fields.
+   * @param $raw
+   *  (optional) Whether to return the raw value of the field, or the processed
+   *  value. Defaults to FALSE.
+   *
+   * @return
+   *  Entity data for the field.
+   */
+  public function field($entity_type, $entity_id, $field_name, $fields = '*', $raw = FALSE);
+
 }
 

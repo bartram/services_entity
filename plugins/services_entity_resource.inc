@@ -109,7 +109,40 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
 
     return $return;
   }
-  
+
+  /**
+   * Implements ServicesResourceControllerInterface::field().
+   */
+  public function field($entity_type, $entity_id, $field_name, $fields = '*', $raw = FALSE) {
+    $entity = entity_load_single($entity_type, $entity_id);
+    if (!$entity) {
+      services_error('Entity not found', 404);
+    }
+
+    $wrapper = entity_metadata_wrapper($entity_type, $entity_id);
+    if ($raw) {
+      $return = $wrapper->{$field_name}->raw();
+    }
+    else {
+      $return = $wrapper->{$field_name}->value();
+    }
+
+    $field = field_info_field($field_name);
+
+    // Special handling for entityreference fields: run the new entities through
+    // limit fields.
+    if ($field['type'] == 'entityreference' && !$raw) {
+      $entities = $return;
+      $return = array();
+
+      foreach($entities as $id => $entity) {
+        $return[] = $this->limit_fields($entity, $fields);
+      }
+    }
+
+    return $return;
+  }
+
   // Limit fields to the list provided.
   protected function limit_fields($entity, $fields) {
     if ($fields == '*') {

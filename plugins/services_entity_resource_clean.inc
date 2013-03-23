@@ -72,6 +72,22 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
     }
     return $return;
   }
+
+  /**
+   * Implements ServicesResourceControllerInterface::field().
+   */
+  public function field($entity_type, $entity_id, $field_name, $fields = '*', $raw = FALSE) {
+    $entity = entity_load_single($entity_type, $entity_id);
+    if (!$entity) {
+      services_error('Entity not found', 404);
+    }
+
+    $field_name = preg_replace('/^field_/', '', $field_name);
+
+    $return = $this->get_data(entity_metadata_wrapper($entity_type, $entity), $field_name);
+    return $return;
+  }
+
   /**
    * Return the data structure for an entity stripped of all "drupalisms" such as
    * field_ and complex data arrays.
