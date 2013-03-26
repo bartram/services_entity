@@ -156,15 +156,15 @@ function services_entity_services_resources() {
         /**
          * Filter parameters
          *
-         * these should be specified by ?param[title]=My Title&param[created]=4403305
+         * these should be specified by ?parameters[title]=My Title&param[created]=4403305
          */
         array(
           'name' => 'parameters',
           'optional' => TRUE,
           'type' => 'array',
-          'description' => 'Filter parameters array such as param[title]="test"',
+          'description' => 'Filter parameters array such as parameters[title]="test"',
           'default value' => array(),
-          'source' => array('param' => 'param'),
+          'source' => array('param' => 'parameters'),
         ),
         /**
          * Page number
