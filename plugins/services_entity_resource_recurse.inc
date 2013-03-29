@@ -83,6 +83,10 @@ class ServicesEntityResourceControllerRecurse extends ServicesEntityResourceCont
       if (isset($entities[$partial_entity->entity_type][$partial_entity->entity_id])) {
         $entity = $entities[$partial_entity->entity_type][$partial_entity->entity_id];
 
+        if (!entity_access('view', $entity_type, $entity)) {
+          continue;
+        }
+
         $wrapper = entity_metadata_wrapper($partial_entity->entity_type, $entity);
         $entity_result = (object) $this->prepare_structure($wrapper, $fields);
         if (!empty($entity_result)) {

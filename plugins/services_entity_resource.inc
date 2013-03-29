@@ -10,7 +10,7 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
    */
   public function access($op, $args) {
     if ($op == 'index') {
-      // Access is handled at the query level.
+      // Access is handled per-entity by index().
       return TRUE;
     }
     if ($op == 'create') {
@@ -104,7 +104,9 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     $entities = entity_load($entity_type, array_keys($result[$entity_type]));
 
     foreach ($entities as $id => $entity) {
-      $return[] = $this->limit_fields($entity, $fields);
+      if (entity_access('view', $entity_type, $entity)) {
+        $return[] = $this->limit_fields($entity, $fields);
+      }
     }
 
     return $return;
@@ -135,8 +137,10 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
       $entities = $return;
       $return = array();
 
-      foreach($entities as $id => $entity) {
-        $return[] = $this->limit_fields($entity, $fields);
+      foreach ($entities as $id => $entity) {
+        if (entity_access('view', $entity_type, $entity)) {
+          $return[] = $this->limit_fields($entity, $fields);
+        }
       }
     }
 

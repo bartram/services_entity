@@ -66,6 +66,8 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
     $property_info = entity_get_all_property_info($entity_type);
     $parameters = $this->transform_values($entity_type, $property_info, $parameters);
     $sort = (isset($property_info['field_' . $sort]))?'field_' . $sort:$sort;
+
+    // Call the parent method, which takes care of access control.
     $entities = parent::index($entity_type, '*', $parameters, $page, $pagesize, $sort, $direction);
     foreach($entities as $entity) {
       $return[] = $this->get_data(entity_metadata_wrapper($entity_type, $entity), $fields);
@@ -84,6 +86,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
 
     $field_name = preg_replace('/^field_/', '', $field_name);
 
+    // The metadata wrapper checks entity_access() on each entity in the field.
     $return = $this->get_data(entity_metadata_wrapper($entity_type, $entity), $field_name);
     return $return;
   }
