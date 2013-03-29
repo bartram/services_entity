@@ -138,7 +138,8 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
       $return = array();
 
       foreach ($entities as $id => $entity) {
-        if (entity_access('view', $entity_type, $entity)) {
+        // The entity type here is the target type of the entityreference field.
+        if (entity_access('view', $field['settings']['target_type'], $entity)) {
           $return[] = $this->limit_fields($entity, $fields);
         }
       }
