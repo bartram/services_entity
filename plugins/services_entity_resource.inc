@@ -34,10 +34,15 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
    */
   public function create($entity_type, array $values) {
     $entity = entity_create($entity_type, $values);
-    if (!entity_save($entity_type, $entity)) {
+    entity_save($entity_type, $entity);
+    list($id, ) = entity_extract_ids($entity_type, $entity);
+
+    // Check we got an ID back for the new entity.
+    if (!isset($id)) {
       services_error('Error saving entity.', 406);
     }
-    return $entity->id;
+
+    return $id;
   }
 
   /**
