@@ -21,7 +21,7 @@ function services_entity_menu() {
  */
 function services_entity_settings_form($form, $form_state) {
   $resources = services_entity_get_resource_info();
-  foreach($resources as $id => $resource) {
+  foreach ($resources as $id => $resource) {
     $options[$resource['class']] = '<strong>' . $resource['title'] . '</strong><div>' . $resource['description'] . '</div>';
   }
 
@@ -92,12 +92,12 @@ function services_entity_services_entity_resource_info() {
  */
 function services_entity_services_resources_alter(&$resources) {
   // For entities that the services module already implements, borrow any operations, actions and relationships.
-  foreach($resources as $name => $resource) {
+  foreach ($resources as $name => $resource) {
     if (preg_match('/^entity_/', $name)) {
       $orig_name = preg_replace('/^entity_/', '', $name);
       if (isset($resources[$orig_name])) {
-        foreach($resources[$orig_name] as $type => $info) {
-          foreach($info as $id => $op) {
+        foreach ($resources[$orig_name] as $type => $info) {
+          foreach ($info as $id => $op) {
             if (!isset($resources[$name][$type][$id])) {
               $resources[$name][$type][$id] = $op;
             }
