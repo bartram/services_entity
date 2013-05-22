@@ -69,7 +69,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
 
     // Call the parent method, which takes care of access control.
     $entities = parent::index($entity_type, '*', $parameters, $page, $pagesize, $sort, $direction);
-    foreach ($entities as $entity) {
+    foreach($entities as $entity) {
       $return[] = $this->get_data(entity_metadata_wrapper($entity_type, $entity), $fields);
     }
     return $return;
@@ -202,7 +202,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
       }
     }
 
-    foreach ($values as $key => $value) {
+    foreach($values as $key => $value) {
       // Handle Resource references so we can pass pack the object.
       if (is_array($value) && isset($value['id'])) {
         $values[$key] = $value['id'];
