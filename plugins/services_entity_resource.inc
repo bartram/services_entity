@@ -114,6 +114,11 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
       }
     }
 
+    // The access check may have resulted in there being no entities left.
+    if (empty($return)) {
+      return services_error(t('No entities found.'), 404);
+    }
+
     return $return;
   }
 
