@@ -42,7 +42,7 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
       services_error('Error saving entity.', 406);
     }
 
-    return $id;
+    return $entity;
   }
 
   /**
@@ -62,7 +62,8 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
   public function update($entity_type, $entity_id, array $values) {
     $entity = entity_metadata_wrapper($entity_type, (object) $values);
     if ($entity_id == $entity->getIdentifier()) {
-      return $entity->save();
+      $entity->save();
+      return $entity;
     }
     else {
       services_error('Invalid Entity Identifier. You can only update the entity referenced in the URL.', 406);
