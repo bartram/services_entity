@@ -158,7 +158,17 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     return $return;
   }
 
-  // Limit fields to the list provided.
+  /**
+   * Limit the fields in an entity to the list provided.
+   *
+   * @param $entity
+   *  The entity to limit the fields of.
+   * @param $fields
+   *  A list of field names. '*' is a wildcard, and leaves the entity unchanged.
+   *
+   * @return
+   *  The entity with any property not specified in $fields removed from it.
+   */
   protected function limit_fields($entity, $fields) {
     if ($fields == '*') {
       return $entity;
