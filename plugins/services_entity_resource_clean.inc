@@ -39,7 +39,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
       services_error('Unknown data properties: ' . implode(' ', array_keys($diff)) . '.', 406);
     }
     $wrapper->save();
-    return $this->get_data(entity_metadata_wrapper($entity_type, $entity), '*');
+    return $this->get_data($wrapper, '*');
   }
 
   public function retrieve($entity_type, $entity_id, $fields) {
@@ -60,7 +60,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
       services_error($e->getMessage(), 406);
     }
     $wrapper->save();
-    return $this->get_data(entity_metadata_wrapper($entity_type, $entity), '*');
+    return $this->get_data($wrapper, '*');
   }
 
   public function index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction) {
