@@ -53,6 +53,12 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     if (!$entity) {
       services_error('Entity not found', 404);
     }
+    // Users get special treatment to remove sensitive data.
+    if ($entity_type == 'user') {
+      // Use the helper that Services module already has.
+      services_remove_user_data($entity);
+    }
+    services_remove_user_data($entity);
     return $this->limit_fields($entity, $fields);
   }
 
@@ -111,6 +117,12 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
 
     foreach ($entities as $id => $entity) {
       if (entity_access('view', $entity_type, $entity)) {
+        // Users get special treatment to remove sensitive data.
+        if ($entity_type == 'user') {
+          // Use the helper that Services module already has.
+          services_remove_user_data($entity);
+        }
+
         $return[] = $this->limit_fields($entity, $fields);
       }
     }
