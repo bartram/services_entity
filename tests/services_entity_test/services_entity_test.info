@@ -1,0 +1,7 @@
+name = Services Entity Test
+description = Provides a test entity for Services Entity tests.
+core = 7.x
+files[] = services_entity_test.module
+files[] = services_entity_test.install
+dependencies[] = services_entity
+hidden = TRUE
