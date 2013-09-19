@@ -200,6 +200,102 @@ class ServicesEntityGenericEntityResource extends ServicesWebTestCase {
   }
 
   /**
+   * Test 'Index' service.
+   */
+  public function testEntityIndex() {
+    // Create some entities to index.
+    $entity_data = array(
+      'type' => 'alpha',
+      'name' => 'one',
+      'uid' => $this->privilegedUser->uid,
+    );
+    $entity = entity_create('services_entity_test', $entity_data);
+    $wrapper = entity_metadata_wrapper('services_entity_test', $entity);
+    $wrapper->field_test_text_alpha->set('field-value-1');
+    $entity->save();
+
+    $entity_data = array(
+      'type' => 'alpha',
+      'name' => 'two',
+      'uid' => $this->privilegedUser->uid,
+    );
+    $entity = entity_create('services_entity_test', $entity_data);
+    $wrapper = entity_metadata_wrapper('services_entity_test', $entity);
+    $wrapper->field_test_text_alpha->set('field-value-1');
+    $entity->save();
+
+    $entity_data = array(
+      'type' => 'alpha',
+      'name' => 'three',
+      'uid' => 0,
+    );
+    $entity = entity_create('services_entity_test', $entity_data);
+    $wrapper = entity_metadata_wrapper('services_entity_test', $entity);
+    $wrapper->field_test_text_alpha->set('field-value-2');
+    $entity->save();
+
+    $entity_data = array(
+      'type' => 'beta',
+      'name' => 'one',
+      'uid' => 0,
+    );
+    $entity = entity_create('services_entity_test', $entity_data);
+    $entity->save();
+
+    // Get the index of all entities.
+    $response = $this->servicesGet($this->resource_path);
+    $retrieved_data = $response['body'];
+
+    $this->assertEqual(count($retrieved_data), 4, 'All entities were listed by the index service.');
+
+    // Get the index of only the 'alpha' bundle entities.
+    $response = $this->servicesGet($this->resource_path, array('parameters[type]' => 'alpha'));
+    $retrieved_data = $response['body'];
+
+    $this->assertEqual(count($retrieved_data), 3, 'The correct number of entities was returned by the index when filtered by entity type.');
+    $all_correct = TRUE;
+    foreach ($retrieved_data as $retrieved_entity) {
+      $all_correct &= ($retrieved_entity->type == 'alpha');
+    }
+    $this->assertTrue($all_correct, 'All the retrieved entities were of the requested entity type.');
+
+    // Get the index of entities by name.
+    $response = $this->servicesGet($this->resource_path, array('parameters[name]' => 'one'));
+    $retrieved_data = $response['body'];
+
+    $this->assertEqual(count($retrieved_data), 2, "The correct number of entities was returned by the index when filtered by entity 'name' property.");
+    $all_correct = TRUE;
+    foreach ($retrieved_data as $retrieved_entity) {
+      $all_correct &= ($retrieved_entity->name == 'one');
+    }
+    $this->assertTrue($all_correct, 'All the retrieved entities had the requested entity property.');
+
+    // Get the index of entities by uid.
+    $response = $this->servicesGet($this->resource_path, array('parameters[uid]' => '0'));
+    $retrieved_data = $response['body'];
+    debug($retrieved_data);
+
+    $this->assertEqual(count($retrieved_data), 2, "The correct number of entities was returned by the index when filtered by entity 'uid' property.");
+    $all_correct = TRUE;
+    foreach ($retrieved_data as $retrieved_entity) {
+      $all_correct &= ($retrieved_entity->uid == 0);
+    }
+    $this->assertTrue($all_correct, 'All the retrieved entities had the requested entity property.');
+
+    // Get the index of entities by multiple properties.
+    $response = $this->servicesGet($this->resource_path, array('parameters[type]' => 'alpha', 'parameters[uid]' => '0'));
+    $retrieved_data = $response['body'];
+
+    $this->assertEqual(count($retrieved_data), 1, "The correct number of entities was returned by the index when filtered by entity type and 'uid' property.");
+
+    // Get the index of entities by a field value.
+    $response = $this->servicesGet($this->resource_path, array('parameters[field_test_text_alpha]' => 'field-value-1'));
+    $retrieved_data = $response['body'];
+
+    $this->assertEqual(count($retrieved_data), 2, "The correct number of entities was returned by the index when filtered by a field value.");
+  }
+
+  /**
    * Need to override this :(
    *
    * @todo: Remove when https://drupal.org/node/2089445 is fixed.
