@@ -196,21 +196,21 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
   }
 
   /**
-   * Helper function which takes care of distinguishing between fields and
-   * entity properties and executes the right EntityFieldQuery function for it.
+   * Helper function for adding a property to an EntityFieldQuery.
+   *
+   * This takes care of distinguishing between fields and entity properties when
+   * adding a condition or ordering to an EntityFieldQuery. It executes the
+   * right EntityFieldQuery method to add the property to the query.
    *
    * @param string $entity_type
-   *   The EntityFieldQuery pointer which should be used.
-   *
+   *   The entity type for the query.
    * @param EntityFieldQuery $query
-   *   The EntityFieldQuery pointer which should be used.
-   *
+   *   The EntityFieldQuery object.
    * @param string $operation
-   *   The general function name, without the words 'property' or 'field'.
-   *
+   *   The general method name, without the words 'property' or 'field'. E.g.,
+   *   one of 'Condition' or 'OrderBy'.
    * @param string $property
-   *   The property or field which should be used.
-   *
+   *   The property or field which is to be added to the query.
    * @param string|array $value
    *   The value for the function.
    */
