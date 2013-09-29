@@ -25,7 +25,7 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
       $entity = entity_load_single($entity_type, $entity_id);
 
       // Pass the entity to the access control.
-      return entity_access($op, $entity_type, $entity);
+      return entity_access($op, $entity_type, $entity ? $entity : NULL);
     }
   }
 
