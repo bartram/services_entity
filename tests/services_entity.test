@@ -3,7 +3,7 @@
 /**
  * Test resources on the Generic controller, using a test entity type.
  */
-class ServicesEntityGenericEntityResource extends ServicesWebTestCase {
+class ServicesEntityGenericEntityResource extends ServicesEntityTestHelper {
 
   /**
    * The user for the test.
@@ -47,9 +47,7 @@ class ServicesEntityGenericEntityResource extends ServicesWebTestCase {
       'services_entity_test'
     );
     // Set up endpoint.
-    $this->endpoint = $this->saveNewEndpoint();
-    // When https://drupal.org/node/2089445 is fixed, change this to:
-    // $this->endpoint = $this->saveNewEndpoint(array('entity_services_entity_test'));
+    $this->endpoint = $this->saveNewEndpoint(array('entity_services_entity_test'));
 
     $this->resource_path = $this->endpoint->path . '/entity_services_entity_test';
 
@@ -294,13 +292,265 @@ class ServicesEntityGenericEntityResource extends ServicesWebTestCase {
 
     $this->assertEqual(count($retrieved_data), 2, "The correct number of entities was returned by the index when filtered by a field value.");
   }
+}
 
+/**
+ * Tests entity_node services for both the generic and clean controller.
+ */
+class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
+  /**
+   * Returns information about this test case.
+   *
+   * @return
+   *   An array of information about this test case
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Entity Node Resource',
+      'description' => 'Ensure that the entity_node resource functions correctly.',
+      'group' => 'Services Entity',
+    );
+  }
+
+  /**
+   * @see ServicesWebTestCase::setUp()
+   */
+  ///* Restore this commenting-out to test using local db (a bit faster that way).
+  public function setUp() {
+    parent::setUp('entity', 'libraries', 'services_entity');
+    $this->endpoint = $this->saveNewEndpoint(array('entity_node'));
+  }
+  // */ public function setUp() { $this->setup = TRUE; $this->endpoint = services_endpoint_load('services'); $this->cookieFile = drupal_tempnam(variable_get('file_temporary_path'), 'services_cookiejar'); $this->additionalCurlOptions[CURLOPT_COOKIEFILE] = $this->cookieFile;} public function tearDown()  {}
+
+  /**
+   * Tests node services using the 'clean' resource controller.
+   */
+  public function testCRUDClean() {
+    $this->testCRUD(TRUE);
+  }
+
+  /**
+   * Tests basic CRUD and index actions of a node via the entity_node service.
+   */
+  public function testCRUD($clean = FALSE) {
+    $resource = 'entity_node';
+    // Certain things are different depending on whether or not we are using
+    // the 'clean' resource controller.
+    if ($clean) {
+      variable_set('services_entity_resource_class', 'ServicesEntityResourceControllerClean');
+      $node = array(
+        'type' => 'page',
+        'title' => $this->randomName(10),
+        'body' => array(
+          'value' => $this->randomName(50),
+          'format' => 'full_html',
+          'summary' => '',
+        ),
+      );
+    }
+    else {
+      variable_set('services_entity_resource_class', 'ServicesEntityResourceController');
+      $node = array(
+        'type' => 'page',
+        'title' => $this->randomName(10),
+        'body' => array(
+          'und' => array(
+            '0' => array(
+              'value' => $this->randomName(50),
+              'format' => 'full_html',
+              'summary' => '',
+            ),
+          )
+        ),
+      );
+    }
+
+    // Test retrieving a specific revision.
+    // @todo complete these tests if/when https://drupal.org/node/1981890 lands.
+    // $nodes = $this->createNodeRevisions();
+    // foreach ($nodes as $node) {
+    // $retrieved = $this->retrieve($resource, $node->nid,
+    // array(
+    // 'revision' => $node->vid,
+    // 'XDEBUG_SESSION_START' => 'ECLIPSE_DBGP'
+    // ), 200);
+    // $this->assertEqual($retrieved->title, $node->title);
+    // }
+
+    // We are only going to test properties that we set explicitly.
+    $test_properties = array_keys($node);
+
+    // Test node access
+    $account = $this->drupalCreateUser(array());
+    $this->serviceLogin($account->name, $account->pass_raw);
+    $this->create($resource, $node, 401);
+    $this->serviceLogout();
+
+    // Test format access.
+    // @todo restore this when https://drupal.org/node/2059845 lands.
+    $account = $this->drupalCreateUser(array('bypass node access'));
+    // $this->serviceLogin($account->name, $account->pass_raw);
+    // $this->create($resource, $node, 403);
+    // $this->serviceLogout();
+
+    // User with format access should be able to create the node.
+    // @todo replace 'bypass node access' with a more meaningful permission once https://drupal.org/node/1865102 lands.
+    //$account = $this->drupalCreateUser(array('bypass node access', 'use text format full_html'));
+    $this->serviceLogin($account->name, $account->pass_raw);
+
+    // Set the 'author' or 'uid' property, depending on which controller we're using.
+    if ($clean) {
+      $node['author'] = $account->uid;
+    }
+    else {
+      $node['uid'] = $account->uid;
+    }
+
+    // We cannot create a node with the clean controller because of [issue link]
+    // @todo remove this conditional once that lands.
+    if ($clean) {
+      $temp_node = $this->drupalCreateNode(array(
+        'type' => $node['type'],
+        'title' => $node['title'],
+        'body' => array(
+          'und' => array(
+            '0' => array(
+              'value' => $node['body']['value'],
+              'format' => $node['body']['format'],
+              'summary' => $node['body']['summary'],
+            ),
+          )
+        )
+      ));
+      $created_node = $this->retrieve($resource, $temp_node->nid);
+    }
+    else {
+      $created_node = $this->create($resource, $node);
+    }
+    $this->assertTrue($created_node['nid'], t('node create response has a node id'));
+    $nid = $created_node['nid'];
+
+    // Verify that the actual node was created.
+    $drupal_node = $this->nodeLoad($nid, $clean);
+    $this->assertNodeProperties($created_node, $drupal_node, $test_properties, 'Node CREATE response');
+    $this->assertNodeProperties($node, $drupal_node, $test_properties, 'Created node');
+
+    // Test an update of the created node.
+    // Change our title and body.
+    $created_node['title'] = $this->randomName(10);
+    $created_node['body']['value'] = $this->randomname(50);
+    $update_result = $this->update($resource, $nid, $created_node, 200);
+    $drupal_node = $this->nodeLoad($nid, $clean);
+    // @todo restore this once [insert issue -- generic-update-entity] lands
+    if (!$clean) {
+      $this->assertNodeProperties($update_result, $drupal_node, $test_properties, 'Created node UPDATE response');
+    }
+    $this->assertNodeProperties($created_node, $drupal_node, $test_properties, 'Updated created node');
+
+    // Test retrieving the new node via services.
+    $fetched_node = $this->retrieve($resource, $nid);
+    $this->assertNodeProperties($fetched_node, $drupal_node, $test_properties, 'Node RETRIEVE response');
+
+    // Test an update of the fetched node.
+    // Change our title and body.
+    $fetched_node['title'] = $this->randomName(10);
+    $fetched_node['body']['value'] = $this->randomname(50);
+    $update_result = $this->update($resource, $nid, $fetched_node, 200);
+    $drupal_node = $this->nodeLoad($nid, $clean);
+    $this->assertNodeProperties($update_result, $drupal_node, $test_properties, 'Fetched node UPDATE response');
+    $this->assertNodeProperties($fetched_node, $drupal_node, $test_properties, 'Updated fetched node');
+
+    // Test a delete of a node.
+    $delete_result = $this->delete($resource, $nid);
+
+    // Confirm the node was deleted.
+    $deleted_node = $this->retrieve($resource, $nid, array(), 404);
+    $drupal_node = node_load($nid, NULL, TRUE);
+    $this->assertFalse($drupal_node, 'The deleted node was removed from the db.');
+
+    // Test creating a node without a body field.
+    $node_sans_body = array(
+      'type' => 'page',
+      'title' => $this->randomName(10),
+    );
+    $created_node_sans_body = $this->create($resource, $node_sans_body);
+    $this->assertTrue($created_node_sans_body['nid'], 'Created Node without body has a response with a node id');
+
+    $drupal_node = $this->nodeLoad($created_node_sans_body['nid'], $clean);
+    $this->assertNodeProperties($node_sans_body, $drupal_node, array_keys($node_sans_body), 'Created node without body');
+  }
+
+  /**
+   * Asserts that all properties in the list are the same in both versions
+   * of the node.
+   *
+   * @param array $a
+   *   One version of the node, converted to an array of values.
+   * @param array $b
+   *   The other version of the node, similarly converted.
+   * @param $keys
+   *   The list of properties to compare.
+   * @param $msg
+   *   An assertion message prefix.
+   */
+  protected function assertNodeProperties($a, $b, $keys, $msg) {
+    // List of drupal fields which require text_format processing.
+    $special_fields = array('body');
+
+    foreach ($keys as $name) {
+      if (in_array($name, $special_fields)) {
+        if (isset($aprop['format']) && isset($bprop['format'])) {
+          // Compare the formatted values.
+          $aprop = check_markup($aprop['value'], $aprop['format']);
+          $bprop = check_markup($bprop['value'], $bprop['format']);
+        }
+      }
+      else {
+        $aprop = $a[$name];
+        $bprop = $b[$name];
+      }
+      $this->assertEqual($aprop, $bprop, "$msg: Property $name matches");
+    }
+  }
+
+  /**
+   * Helper function to load a node and process it so it matches the format
+   * used by the service controller.
+   *
+   * @param $nid
+   *   The node to load.
+   * @param $clean
+   *   If TRUE, use the ServicesResourceControllerClean class.
+   * @return
+   *   The loaded, processed node.
+   */
+  public function nodeLoad($nid, $clean = FALSE) {
+    $node = $this->unObject(node_load($nid, NULL, TRUE));
+
+    if ($clean) {
+      $node['author'] = $node['uid'];
+      if (!empty($node['body'])) {
+        $node['body'] = reset($node['body'][$node['language']]);
+      }
+    }
+    return $node;
+  }
+}
+
+
+/**
+ * Services Entity Test Helper class.
+ */
+class ServicesEntityTestHelper extends ServicesWebTestCase {
   /**
    * Need to override this :(
    *
+   * @param array $resources
+   *   A list of the resources which should be added.
+   *
    * @todo: Remove when https://drupal.org/node/2089445 is fixed.
    */
-  public function saveNewEndpoint() {
+  public function saveNewEndpoint(array $resources) {
     $edit = $this->populateEndpointFAPI() ;
 
     $edit['path'] = 'endpoint';
@@ -380,26 +630,32 @@ class ServicesEntityGenericEntityResource extends ServicesWebTestCase {
           ),
         ),
       ),
-      'entity_services_entity_test' => array(
-        'operations' => array(
-          'retrieve' => array(
-            'enabled' => 1,
-          ),
-          'create' => array(
-            'enabled' => 1,
-          ),
-          'update' => array(
-            'enabled' => 1,
-          ),
-          'delete' => array(
-            'enabled' => 1,
-          ),
-          'index' => array(
-            'enabled' => 1,
+    );
+    foreach ($resources as $resource) {
+      // @todo Add other operations besides CRUD.
+      $endpoint->resources += array(
+        $resource => array(
+          'operations' => array(
+            'retrieve' => array(
+              'enabled' => 1,
+            ),
+            'create' => array(
+              'enabled' => 1,
+            ),
+            'update' => array(
+              'enabled' => 1,
+            ),
+            'delete' => array(
+              'enabled' => 1,
+            ),
+            'index' => array(
+              'enabled' => 1,
+            ),
           ),
         ),
-      ),
-    );
+      );
+
+    }
     $endpoint->debug = 1;
     $endpoint->export_type = FALSE;
     services_endpoint_save($endpoint);
@@ -409,4 +665,158 @@ class ServicesEntityGenericEntityResource extends ServicesWebTestCase {
     return $endpoint;
   }
 
+  /**
+   * Log a user in via services.
+   *
+   * @param String $name
+   *   The name of the user to log in.
+   * @param String $pass
+   *   The password of the user to log in.
+   *
+   * @return Object
+   *   The newly logged in user object.
+   */
+  public function serviceLogin($name, $pass) {
+    $response = $this->servicesPost($this->endpoint->path . '/user/login', array('username' => $name, 'password' => $pass));
+    $response_data = $response['body'];
+    $proper_answer = isset($response_data->sessid)
+      && isset($response_data->user)
+      && $response_data->user->name == $name;
+    $this->assertTrue($proper_answer, 'User successfully logged in.');
+    // Save session details.
+    $this->session_id = $response_data->sessid;
+    $this->session_name = $response_data->session_name;
+    $this->loggedInUser = $response_data->user;
+    return $this->loggedInUser;
+  }
+
+  /**
+   * Log out via services.
+   */
+  public function serviceLogout() {
+    $response = $this->servicesPost($this->endpoint->path . '/user/logout');
+    $this->assertEqual($response['code'], 200, 'Received 200 response code from LOGOUT');
+  }
+
+  /**
+   * Utility function to recursively turn an object into an array.
+   *
+   * @param array/object $object
+   *   The object, array or element to process
+   *
+   * @return array
+   *   An array corresponding to $object, with any objects converted to arrays.
+   *
+   * @author ChrisO
+   */
+  protected function unObject($object) {
+    if (is_object($object)) {
+      $object = (array) $object;
+    }
+    if (is_array($object)) {
+      foreach ($object as $key => $element) {
+        $object[$key] = $this->unObject($element);
+      }
+    }
+    return $object;
+  }
+
+  /**
+   * Helper to perform a RESTful update of a resource.
+   *
+   * @param String $resource
+   *   The resource type to operate on.
+   * @param int $name
+   *   The name of the resource to update
+   * @param array $data
+   *   The update data to put.
+   * @param int $code
+   *   The expected response code (defaults to 200).
+   */
+  public function update($resource, $name, $data = array(), $code = 200) {
+    $r = $this->servicesPut($this->endpoint->path . '/' . $resource . '/' . $name, $data);
+    $this->assertEqual($r['code'], $code, "Received $code response code from UPDATE $resource/$name (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+
+  /**
+   * Helper to perform a RESTful action of a resource.
+   *
+   * @param String $resource
+   *   The resource type to operate on.
+   * @param int $name
+   *   The name of the resource to update
+   * @param array $data
+   *   The update data to put.
+   * @param int $code
+   *   The expected response code (defaults to 200).
+   */
+  public function action($resource, $name, $action, $data, $code) {
+    if (!is_array($data)) {
+      $data = (array) $data;
+    }
+
+    $destination = '';
+    if (isset($name) && strlen($name) > 0) {
+      $path = "$resource/$name/$action";
+    }
+    else {
+      $path = "$resource/$action";
+    }
+    $r = $this->servicesPost($this->endpoint_path . '/' . $path, $data);
+    $this->assertEqual($r['code'], $code, "Received $code response code from ACTION $path (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+
+  /**
+   * Helper to perform a RESTful create of a resource.
+   *
+   * @param String $resource
+   *   The resource type to operate on.
+   * @param array $data
+   *   The update data to post.
+   * @param int $code
+   *   The expected response code (defaults to 200).
+   */
+  public function create($resource, $data = array(), $code = 200) {
+    $r = $this->servicesPost($this->endpoint->path . '/' . $resource, $data);
+    $this->assertEqual($r['code'], $code, "Received $code response code from CREATE $resource (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+
+  /**
+   * Helper function to perform a RESTful delete of a resource.
+   *
+   * @param String $resource
+   *   The resource type to operate on.
+   * @param int $name
+   *   The name of the resource to update. (i.e. the ID).
+   * @param int $code
+   *   The expected response code (defaults to 200).
+   */
+  public function delete($resource, $name, $code = 200) {
+    // Call to parent::servicesDelete
+    $r = $this->servicesDelete($this->endpoint->path . '/' . $resource . '/' . $name, NULL);
+    $this->assertEqual($r['code'], $code, "Received $code response code from DELETE $resource/$name (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+
+  /**
+   * Helper to performa a RESTful retrieve of a resource.
+   *
+   * @param string $resource
+   *   The resource type to operate on.
+   * @param string $name
+   *   The name of the resource to update
+   * @param array $args
+   *   Any additional args for the querystring.
+   * @param integer $code
+   *   The expected response code (defaults to 200).
+   */
+  public function retrieve($resource, $name, $args = array(), $code = 200) {
+    $r = $this->servicesGet($this->endpoint->path . '/' . $resource . '/' . $name, $args);
+    $this->assertEqual($r['code'], $code, "Received $code response code from RETRIEVE $resource/$name (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
 }
+
