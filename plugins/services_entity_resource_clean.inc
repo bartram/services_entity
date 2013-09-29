@@ -53,7 +53,14 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
     try {
       $wrapper = entity_metadata_wrapper($entity_type, $entity_id);
       foreach ($values as $name => $value) {
-        $wrapper->{$name}->set($value);
+        // Only attempt to set properties when the new value differs from that
+        // on the existing entity; otherwise, requests will fail for read-only
+        // and unauthorized properties, even if they are not being changed. This
+        // allows us to UPDATE a previously retrieved entity without removing
+        // such properties from the payload, as long as they are unchanged.
+        if ($value != $wrapper->{$name}->raw()) {
+          $wrapper->{$name}->set($value);
+        }
       }
     }
     catch (EntityMetadataWrapperException $e) {
