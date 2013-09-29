@@ -323,6 +323,58 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
   // */ public function setUp() { $this->setup = TRUE; $this->endpoint = services_endpoint_load('services'); $this->cookieFile = drupal_tempnam(variable_get('file_temporary_path'), 'services_cookiejar'); $this->additionalCurlOptions[CURLOPT_COOKIEFILE] = $this->cookieFile;} public function tearDown()  {}
 
   /**
+   * Test index functionality with the clean controller.
+   */
+  public function testIndexClean() {
+    $this->testIndex(TRUE);
+  }
+
+  /**
+   * Test index functionality.
+   *
+   * @param boolean $clean
+   *   TRUE to use the clean controller, FALSE to use the generic.
+   */
+  public function testIndex($clean = FALSE) {
+    // Choose the controller.
+    if ($clean) {
+      variable_set('services_entity_resource_class', 'ServicesEntityResourceControllerClean');
+    }
+    else {
+      variable_set('services_entity_resource_class', 'ServicesEntityResourceController');
+    }
+
+    // Create some nodes
+    for ($i = 0; $i < 6; $i++) {
+      $values = array(
+        'type' => $i < 4 ? 'page' : 'article',
+        'title' => $this->randomName(8),
+        'body' => array(
+          LANGUAGE_NONE => array(
+            '0' => array(
+              'value' => $this->randomName(30),
+              'format' => filter_default_format(),
+              'summary' => '',
+            ),
+          ),
+        ),
+      );
+      $nodes[] = $this->drupalCreateNode($values);
+    }
+
+    // Fetch the index and verify that it returns the correct number of nodes.
+    $resource = 'entity_node';
+    $r = $this->index($resource);
+    $this->assertEqual(count($r), count($nodes), 'Index returned the correct number of nodes.');
+
+    // Try the same for each type.
+    $r = $this->index($resource, array('parameters[type]' => 'page'));
+    $this->assertEqual(count($r), 4, 'Index returned the correct number of pages.');
+    $r = $this->index($resource, array('parameters[type]' => 'article'));
+    $this->assertEqual(count($r), 2, 'Index returned the correct number of articles.');
+  }
+
+  /**
    * Tests node services using the 'clean' resource controller.
    */
   public function testCRUDClean() {
@@ -818,5 +870,22 @@ class ServicesEntityTestHelper extends ServicesWebTestCase {
     $this->assertEqual($r['code'], $code, "Received $code response code from RETRIEVE $resource/$name (actual response=" . $r['code'] . ")");
     return $this->unObject($r['body']);
   }
+
+  /**
+   * Helper to performa a RESTful index of a resource.
+   *
+   * @param string $resource
+   *   The resource type to operate on.
+   * @param array $args
+   *   Any additional args for the querystring.
+   * @param integer $code
+   *   The expected response code (defaults to 200).
+   */
+  public function index($resource, $args = array(), $code = 200) {
+    $r = $this->servicesGet($this->endpoint->path . '/' . $resource, $args);
+    $this->assertEqual($r['code'], $code, "Received $code response code from INDEX $resource (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+
 }
 

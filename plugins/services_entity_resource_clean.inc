@@ -23,11 +23,21 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
     }
 
     // Make sure that bundle information is present on entities that have
-    // bundles.
-    $entity_info = entity_get_info($entity_type);
-    if (isset($entity_info['bundle keys'])) {
-      foreach ($entity_info['bundle keys'] as $bundle_key) {
-        if (!array_key_exists($bundle_key, $values)) {
+    // bundles. We have to do this after creating the wrapper, because the
+    // name of the bundle key may differ from that of the corresponding
+    // metadata property (e.g. for taxonomy terms, the bundle key is
+    // 'vocabulary_machine_name', while the property is 'vocabulary').
+    if ($bundle_key = $wrapper->entityKey('bundle') && count($entity_info['bundles']) == 1) {
+      $entity = $wrapper->value();
+      if (empty($entity->{$bundle_key})) {
+        $entity_info = $wrapper->entityInfo();
+        if (isset($entity_info['bundles']) && count($entity_info['bundles']) === 1) {
+          // If the entity supports only a single bundle, then use that as a
+          // default. This allows creation of such entities if (as with ECK)
+          // they still use a bundle key.
+          $entity->{$bundle_key} = reset($entity_info['bundles']);
+        }
+        else {
           services_error('Missing bundle: ' . $bundle_key, 406);
         }
       }
@@ -200,16 +210,6 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
    * @return type
    */
   protected function transform_values($entity_type, $property_info, $values) {
-    // Default the bundle to the entity_type. This allows eck types that don't use custom bundles to not have to specify the bundle.
-    $entity_info = entity_get_info($entity_type);
-    if (isset($entity_info['bundle keys'])) {
-      foreach ($entity_info['bundle keys'] as $bundle_key) {
-        if (!array_key_exists($bundle_key, $values)) {
-          $values[$bundle_key] = $entity_type;
-        }
-      }
-    }
-
     foreach($values as $key => $value) {
       // Handle Resource references so we can pass pack the object.
       if (is_array($value) && isset($value['id'])) {
