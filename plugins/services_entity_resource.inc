@@ -66,10 +66,10 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
    * Implements ServicesResourceControllerInterface::update().
    */
   public function update($entity_type, $entity_id, array $values) {
-    $entity = entity_metadata_wrapper($entity_type, (object) $values);
-    if ($entity_id == $entity->getIdentifier()) {
-      $entity->save();
-      return $entity;
+    $wrapper = entity_metadata_wrapper($entity_type, (object) $values);
+    if ($entity_id == $wrapper->getIdentifier()) {
+      $wrapper->save();
+      return $wrapper->value();
     }
     else {
       services_error('Invalid Entity Identifier. You can only update the entity referenced in the URL.', 406);
