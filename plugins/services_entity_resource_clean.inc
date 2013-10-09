@@ -27,7 +27,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
     // name of the bundle key may differ from that of the corresponding
     // metadata property (e.g. for taxonomy terms, the bundle key is
     // 'vocabulary_machine_name', while the property is 'vocabulary').
-    if ($bundle_key = $wrapper->entityKey('bundle') && count($entity_info['bundles']) == 1) {
+    if ($bundle_key = $wrapper->entityKey('bundle')) {
       $entity = $wrapper->value();
       if (empty($entity->{$bundle_key})) {
         $entity_info = $wrapper->entityInfo();
