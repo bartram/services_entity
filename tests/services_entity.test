@@ -1,4 +1,305 @@
 <?php
+/**
+ * @file Services Entity Tests
+ */
+
+/**
+ * Services Entity Test Helper class.
+ */
+class ServicesEntityTestHelper extends ServicesWebTestCase {
+  /**
+   * Need to override this :(
+   *
+   * @param array $resources
+   *   A list of the resources which should be added.
+   *
+   * @todo: Remove when https://drupal.org/node/2089445 is fixed.
+   */
+  public function saveNewEndpoint(array $resources) {
+    $edit = $this->populateEndpointFAPI() ;
+
+    $edit['path'] = 'endpoint';
+    $edit['title'] = 'WT??';
+
+    $endpoint = new stdClass;
+    $endpoint->disabled = FALSE; /* Edit this to true to make a default endpoint disabled initially */
+    $endpoint->api_version = 3;
+    $endpoint->name = $edit['name'];
+    $endpoint->title = $edit['title'];
+    $endpoint->server = $edit['server'];
+    $endpoint->path = $edit['path'];
+    $endpoint->authentication = array(
+      'services' => 'services',
+    );
+    $endpoint->server_settings = array(
+      'formatters' => array(
+        'json' => TRUE,
+        'bencode' => TRUE,
+        'rss' => TRUE,
+        'plist' => TRUE,
+        'xmlplist' => TRUE,
+        'php' => TRUE,
+        'yaml' => TRUE,
+        'jsonp' => FALSE,
+        'xml' => FALSE,
+      ),
+      'parsers' => array(
+        'application/x-yaml' => TRUE,
+        'application/json' => TRUE,
+        'application/vnd.php.serialized' => TRUE,
+        'application/plist' => TRUE,
+        'application/plist+xml' => TRUE,
+        'application/x-www-form-urlencoded' => TRUE,
+      ),
+    );
+    $endpoint->resources = array(
+      'system' => array(
+        'alias' => '',
+        'actions' => array(
+          'connect' => array(
+            'enabled' => 1,
+          ),
+          'get_variable' => array(
+            'enabled' => 1,
+          ),
+          'set_variable' => array(
+            'enabled' => 1,
+          ),
+        ),
+      ),
+      'user' => array(
+        'alias' => '',
+        'operations' => array(
+          'create' => array(
+            'enabled' => 1,
+          ),
+          'retrieve' => array(
+            'enabled' => 1,
+          ),
+          'update' => array(
+            'enabled' => 1,
+          ),
+          'delete' => array(
+            'enabled' => 1,
+          ),
+          'index' => array(
+            'enabled' => 1,
+          ),
+        ),
+        'actions' => array(
+          'login' => array(
+            'enabled' => 1,
+          ),
+          'logout' => array(
+            'enabled' => 1,
+          ),
+        ),
+      ),
+    );
+    foreach ($resources as $resource) {
+      // @todo Add other operations besides CRUD.
+      $endpoint->resources += array(
+        $resource => array(
+          'operations' => array(
+            'retrieve' => array(
+              'enabled' => 1,
+            ),
+            'create' => array(
+              'enabled' => 1,
+            ),
+            'update' => array(
+              'enabled' => 1,
+            ),
+            'delete' => array(
+              'enabled' => 1,
+            ),
+            'index' => array(
+              'enabled' => 1,
+            ),
+          ),
+        ),
+      );
+
+    }
+    $endpoint->debug = 1;
+    $endpoint->export_type = FALSE;
+    services_endpoint_save($endpoint);
+    $endpoint = services_endpoint_load($endpoint->name);
+
+    $this->assertTrue($endpoint->name == $edit['name'], 'Endpoint successfully created');
+    return $endpoint;
+  }
+
+  /**
+   * Log a user in via services.
+   *
+   * @param String $name
+   *   The name of the user to log in.
+   * @param String $pass
+   *   The password of the user to log in.
+   *
+   * @return Object
+   *   The newly logged in user object.
+   */
+  public function serviceLogin($name, $pass) {
+    $response = $this->servicesPost($this->endpoint->path . '/user/login', array('username' => $name, 'password' => $pass));
+    $response_data = $response['body'];
+    $proper_answer = isset($response_data->sessid)
+      && isset($response_data->user)
+      && $response_data->user->name == $name;
+    $this->assertTrue($proper_answer, 'User successfully logged in.');
+    // Save session details.
+    $this->session_id = $response_data->sessid;
+    $this->session_name = $response_data->session_name;
+    $this->loggedInUser = $response_data->user;
+    return $this->loggedInUser;
+  }
+
+  /**
+   * Log out via services.
+   */
+  public function serviceLogout() {
+    $response = $this->servicesPost($this->endpoint->path . '/user/logout');
+    $this->assertEqual($response['code'], 200, 'Received 200 response code from LOGOUT');
+  }
+
+  /**
+   * Utility function to recursively turn an object into an array.
+   *
+   * @param array/object $object
+   *   The object, array or element to process
+   *
+   * @return array
+   *   An array corresponding to $object, with any objects converted to arrays.
+   *
+   * @author ChrisO
+   */
+  protected function unObject($object) {
+    if (is_object($object)) {
+      $object = (array) $object;
+    }
+    if (is_array($object)) {
+      foreach ($object as $key => $element) {
+        $object[$key] = $this->unObject($element);
+      }
+    }
+    return $object;
+  }
+
+  /**
+   * Helper to perform a RESTful update of a resource.
+   *
+   * @param String $resource
+   *   The resource type to operate on.
+   * @param int $name
+   *   The name of the resource to update
+   * @param array $data
+   *   The update data to put.
+   * @param int $code
+   *   The expected response code (defaults to 200).
+   */
+  public function update($resource, $name, $data = array(), $code = 200) {
+    $r = $this->servicesPut($this->endpoint->path . '/' . $resource . '/' . $name, $data);
+    $this->assertEqual($r['code'], $code, "Received $code response code from UPDATE $resource/$name (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+
+  /**
+   * Helper to perform a RESTful action of a resource.
+   *
+   * @param String $resource
+   *   The resource type to operate on.
+   * @param int $name
+   *   The name of the resource to update
+   * @param array $data
+   *   The update data to put.
+   * @param int $code
+   *   The expected response code (defaults to 200).
+   */
+  public function action($resource, $name, $action, $data, $code) {
+    if (!is_array($data)) {
+      $data = (array) $data;
+    }
+
+    $destination = '';
+    if (isset($name) && strlen($name) > 0) {
+      $path = "$resource/$name/$action";
+    }
+    else {
+      $path = "$resource/$action";
+    }
+    $r = $this->servicesPost($this->endpoint_path . '/' . $path, $data);
+    $this->assertEqual($r['code'], $code, "Received $code response code from ACTION $path (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+
+  /**
+   * Helper to perform a RESTful create of a resource.
+   *
+   * @param String $resource
+   *   The resource type to operate on.
+   * @param array $data
+   *   The update data to post.
+   * @param int $code
+   *   The expected response code (defaults to 200).
+   */
+  public function create($resource, $data = array(), $code = 200) {
+    $r = $this->servicesPost($this->endpoint->path . '/' . $resource, $data);
+    $this->assertEqual($r['code'], $code, "Received $code response code from CREATE $resource (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+
+  /**
+   * Helper function to perform a RESTful delete of a resource.
+   *
+   * @param String $resource
+   *   The resource type to operate on.
+   * @param int $name
+   *   The name of the resource to update. (i.e. the ID).
+   * @param int $code
+   *   The expected response code (defaults to 200).
+   */
+  public function delete($resource, $name, $code = 200) {
+    // Call to parent::servicesDelete
+    $r = $this->servicesDelete($this->endpoint->path . '/' . $resource . '/' . $name, NULL);
+    $this->assertEqual($r['code'], $code, "Received $code response code from DELETE $resource/$name (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+
+  /**
+   * Helper to performa a RESTful retrieve of a resource.
+   *
+   * @param string $resource
+   *   The resource type to operate on.
+   * @param string $name
+   *   The name of the resource to update
+   * @param array $args
+   *   Any additional args for the querystring.
+   * @param integer $code
+   *   The expected response code (defaults to 200).
+   */
+  public function retrieve($resource, $name, $args = array(), $code = 200) {
+    $r = $this->servicesGet($this->endpoint->path . '/' . $resource . '/' . $name, $args);
+    $this->assertEqual($r['code'], $code, "Received $code response code from RETRIEVE $resource/$name (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+
+  /**
+   * Helper to performa a RESTful index of a resource.
+   *
+   * @param string $resource
+   *   The resource type to operate on.
+   * @param array $args
+   *   Any additional args for the querystring.
+   * @param integer $code
+   *   The expected response code (defaults to 200).
+   */
+  public function index($resource, $args = array(), $code = 200) {
+    $r = $this->servicesGet($this->endpoint->path . '/' . $resource, $args);
+    $this->assertEqual($r['code'], $code, "Received $code response code from INDEX $resource (actual response=" . $r['code'] . ")");
+    return $this->unObject($r['body']);
+  }
+}
 
 /**
  * Test resources on the Generic controller, using a test entity type.
@@ -588,304 +889,3 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     return $node;
   }
 }
-
-
-/**
- * Services Entity Test Helper class.
- */
-class ServicesEntityTestHelper extends ServicesWebTestCase {
-  /**
-   * Need to override this :(
-   *
-   * @param array $resources
-   *   A list of the resources which should be added.
-   *
-   * @todo: Remove when https://drupal.org/node/2089445 is fixed.
-   */
-  public function saveNewEndpoint(array $resources) {
-    $edit = $this->populateEndpointFAPI() ;
-
-    $edit['path'] = 'endpoint';
-    $edit['title'] = 'WT??';
-
-    $endpoint = new stdClass;
-    $endpoint->disabled = FALSE; /* Edit this to true to make a default endpoint disabled initially */
-    $endpoint->api_version = 3;
-    $endpoint->name = $edit['name'];
-    $endpoint->title = $edit['title'];
-    $endpoint->server = $edit['server'];
-    $endpoint->path = $edit['path'];
-    $endpoint->authentication = array(
-      'services' => 'services',
-    );
-    $endpoint->server_settings = array(
-      'formatters' => array(
-        'json' => TRUE,
-        'bencode' => TRUE,
-        'rss' => TRUE,
-        'plist' => TRUE,
-        'xmlplist' => TRUE,
-        'php' => TRUE,
-        'yaml' => TRUE,
-        'jsonp' => FALSE,
-        'xml' => FALSE,
-      ),
-      'parsers' => array(
-        'application/x-yaml' => TRUE,
-        'application/json' => TRUE,
-        'application/vnd.php.serialized' => TRUE,
-        'application/plist' => TRUE,
-        'application/plist+xml' => TRUE,
-        'application/x-www-form-urlencoded' => TRUE,
-      ),
-    );
-    $endpoint->resources = array(
-      'system' => array(
-        'alias' => '',
-        'actions' => array(
-          'connect' => array(
-            'enabled' => 1,
-          ),
-          'get_variable' => array(
-            'enabled' => 1,
-          ),
-          'set_variable' => array(
-            'enabled' => 1,
-          ),
-        ),
-      ),
-      'user' => array(
-        'alias' => '',
-        'operations' => array(
-          'create' => array(
-            'enabled' => 1,
-          ),
-          'retrieve' => array(
-            'enabled' => 1,
-          ),
-          'update' => array(
-            'enabled' => 1,
-          ),
-          'delete' => array(
-            'enabled' => 1,
-          ),
-          'index' => array(
-            'enabled' => 1,
-          ),
-        ),
-        'actions' => array(
-          'login' => array(
-            'enabled' => 1,
-          ),
-          'logout' => array(
-            'enabled' => 1,
-          ),
-        ),
-      ),
-    );
-    foreach ($resources as $resource) {
-      // @todo Add other operations besides CRUD.
-      $endpoint->resources += array(
-        $resource => array(
-          'operations' => array(
-            'retrieve' => array(
-              'enabled' => 1,
-            ),
-            'create' => array(
-              'enabled' => 1,
-            ),
-            'update' => array(
-              'enabled' => 1,
-            ),
-            'delete' => array(
-              'enabled' => 1,
-            ),
-            'index' => array(
-              'enabled' => 1,
-            ),
-          ),
-        ),
-      );
-
-    }
-    $endpoint->debug = 1;
-    $endpoint->export_type = FALSE;
-    services_endpoint_save($endpoint);
-    $endpoint = services_endpoint_load($endpoint->name);
-
-    $this->assertTrue($endpoint->name == $edit['name'], 'Endpoint successfully created');
-    return $endpoint;
-  }
-
-  /**
-   * Log a user in via services.
-   *
-   * @param String $name
-   *   The name of the user to log in.
-   * @param String $pass
-   *   The password of the user to log in.
-   *
-   * @return Object
-   *   The newly logged in user object.
-   */
-  public function serviceLogin($name, $pass) {
-    $response = $this->servicesPost($this->endpoint->path . '/user/login', array('username' => $name, 'password' => $pass));
-    $response_data = $response['body'];
-    $proper_answer = isset($response_data->sessid)
-      && isset($response_data->user)
-      && $response_data->user->name == $name;
-    $this->assertTrue($proper_answer, 'User successfully logged in.');
-    // Save session details.
-    $this->session_id = $response_data->sessid;
-    $this->session_name = $response_data->session_name;
-    $this->loggedInUser = $response_data->user;
-    return $this->loggedInUser;
-  }
-
-  /**
-   * Log out via services.
-   */
-  public function serviceLogout() {
-    $response = $this->servicesPost($this->endpoint->path . '/user/logout');
-    $this->assertEqual($response['code'], 200, 'Received 200 response code from LOGOUT');
-  }
-
-  /**
-   * Utility function to recursively turn an object into an array.
-   *
-   * @param array/object $object
-   *   The object, array or element to process
-   *
-   * @return array
-   *   An array corresponding to $object, with any objects converted to arrays.
-   *
-   * @author ChrisO
-   */
-  protected function unObject($object) {
-    if (is_object($object)) {
-      $object = (array) $object;
-    }
-    if (is_array($object)) {
-      foreach ($object as $key => $element) {
-        $object[$key] = $this->unObject($element);
-      }
-    }
-    return $object;
-  }
-
-  /**
-   * Helper to perform a RESTful update of a resource.
-   *
-   * @param String $resource
-   *   The resource type to operate on.
-   * @param int $name
-   *   The name of the resource to update
-   * @param array $data
-   *   The update data to put.
-   * @param int $code
-   *   The expected response code (defaults to 200).
-   */
-  public function update($resource, $name, $data = array(), $code = 200) {
-    $r = $this->servicesPut($this->endpoint->path . '/' . $resource . '/' . $name, $data);
-    $this->assertEqual($r['code'], $code, "Received $code response code from UPDATE $resource/$name (actual response=" . $r['code'] . ")");
-    return $this->unObject($r['body']);
-  }
-
-  /**
-   * Helper to perform a RESTful action of a resource.
-   *
-   * @param String $resource
-   *   The resource type to operate on.
-   * @param int $name
-   *   The name of the resource to update
-   * @param array $data
-   *   The update data to put.
-   * @param int $code
-   *   The expected response code (defaults to 200).
-   */
-  public function action($resource, $name, $action, $data, $code) {
-    if (!is_array($data)) {
-      $data = (array) $data;
-    }
-
-    $destination = '';
-    if (isset($name) && strlen($name) > 0) {
-      $path = "$resource/$name/$action";
-    }
-    else {
-      $path = "$resource/$action";
-    }
-    $r = $this->servicesPost($this->endpoint_path . '/' . $path, $data);
-    $this->assertEqual($r['code'], $code, "Received $code response code from ACTION $path (actual response=" . $r['code'] . ")");
-    return $this->unObject($r['body']);
-  }
-
-  /**
-   * Helper to perform a RESTful create of a resource.
-   *
-   * @param String $resource
-   *   The resource type to operate on.
-   * @param array $data
-   *   The update data to post.
-   * @param int $code
-   *   The expected response code (defaults to 200).
-   */
-  public function create($resource, $data = array(), $code = 200) {
-    $r = $this->servicesPost($this->endpoint->path . '/' . $resource, $data);
-    $this->assertEqual($r['code'], $code, "Received $code response code from CREATE $resource (actual response=" . $r['code'] . ")");
-    return $this->unObject($r['body']);
-  }
-
-  /**
-   * Helper function to perform a RESTful delete of a resource.
-   *
-   * @param String $resource
-   *   The resource type to operate on.
-   * @param int $name
-   *   The name of the resource to update. (i.e. the ID).
-   * @param int $code
-   *   The expected response code (defaults to 200).
-   */
-  public function delete($resource, $name, $code = 200) {
-    // Call to parent::servicesDelete
-    $r = $this->servicesDelete($this->endpoint->path . '/' . $resource . '/' . $name, NULL);
-    $this->assertEqual($r['code'], $code, "Received $code response code from DELETE $resource/$name (actual response=" . $r['code'] . ")");
-    return $this->unObject($r['body']);
-  }
-
-  /**
-   * Helper to performa a RESTful retrieve of a resource.
-   *
-   * @param string $resource
-   *   The resource type to operate on.
-   * @param string $name
-   *   The name of the resource to update
-   * @param array $args
-   *   Any additional args for the querystring.
-   * @param integer $code
-   *   The expected response code (defaults to 200).
-   */
-  public function retrieve($resource, $name, $args = array(), $code = 200) {
-    $r = $this->servicesGet($this->endpoint->path . '/' . $resource . '/' . $name, $args);
-    $this->assertEqual($r['code'], $code, "Received $code response code from RETRIEVE $resource/$name (actual response=" . $r['code'] . ")");
-    return $this->unObject($r['body']);
-  }
-
-  /**
-   * Helper to performa a RESTful index of a resource.
-   *
-   * @param string $resource
-   *   The resource type to operate on.
-   * @param array $args
-   *   Any additional args for the querystring.
-   * @param integer $code
-   *   The expected response code (defaults to 200).
-   */
-  public function index($resource, $args = array(), $code = 200) {
-    $r = $this->servicesGet($this->endpoint->path . '/' . $resource, $args);
-    $this->assertEqual($r['code'], $code, "Received $code response code from INDEX $resource (actual response=" . $r['code'] . ")");
-    return $this->unObject($r['body']);
-  }
-
-}
-
