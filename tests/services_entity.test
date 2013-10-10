@@ -339,9 +339,6 @@ class ServicesEntityGenericEntityResource extends ServicesEntityTestHelper {
    */
   public function setUp() {
     parent::setUp(
-      'ctools',
-      'services',
-      'rest_server',
       'entity',
       'services_entity',
       // Our test module which provides our test entity type.
@@ -618,7 +615,7 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
    */
   ///* Restore this commenting-out to test using local db (a bit faster that way).
   public function setUp() {
-    parent::setUp('entity', 'libraries', 'services_entity');
+    parent::setUp('entity', 'services_entity');
     $this->endpoint = $this->saveNewEndpoint(array('entity_node'));
   }
   // */ public function setUp() { $this->setup = TRUE; $this->endpoint = services_endpoint_load('services'); $this->cookieFile = drupal_tempnam(variable_get('file_temporary_path'), 'services_cookiejar'); $this->additionalCurlOptions[CURLOPT_COOKIEFILE] = $this->cookieFile;} public function tearDown()  {}
