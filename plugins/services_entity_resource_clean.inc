@@ -196,8 +196,17 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
   protected function property_access_filter($wrapper) {
     $filtered = array();
     foreach ($wrapper as $name => $property) {
-      if ($property->access('view')) {
-        $filtered[$name] = $property;
+      try {
+        if ($property->access('view')) {
+          $filtered[$name] = $property;
+        }
+      }
+      catch (EntityMetaDataWrapperException $e) {
+        // Log the exception and ignore the property. This is known to happen
+        // when attempting to access the 'book' property of a non-book node.
+        // In such cases Entity API erroneously throws an exception.
+        // @see https://drupal.org/node/2051087 and linked issues.
+        watchdog('services_entity', 'Exception testing access to property @p: @e', array('@p' => $name, '@e' => $e->getMessage()), 'warning');
       }
     }
     return $filtered;
