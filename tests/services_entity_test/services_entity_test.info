@@ -4,4 +4,6 @@ core = 7.x
 files[] = services_entity_test.module
 files[] = services_entity_test.install
 dependencies[] = services_entity
+dependencies[] = rest_server
+dependencies[] = libraries (>=2.x)
 hidden = TRUE
