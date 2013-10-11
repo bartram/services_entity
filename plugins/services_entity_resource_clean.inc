@@ -206,7 +206,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
         // when attempting to access the 'book' property of a non-book node.
         // In such cases Entity API erroneously throws an exception.
         // @see https://drupal.org/node/2051087 and linked issues.
-        watchdog('services_entity', 'Exception testing access to property @p: @e', array('@p' => $name, '@e' => $e->getMessage()), 'warning');
+        watchdog('services_entity', 'Exception testing access to property @p: @e', array('@p' => $name, '@e' => $e->getMessage()), WATCHDOG_WARNING);
       }
     }
     return $filtered;
