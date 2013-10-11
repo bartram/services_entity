@@ -89,7 +89,7 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
   public function index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction) {
     // Make sure the pagesize is not too large.
     $max_pagesize = variable_get('services_entity_max_pagesize', 100);
-    $pagesize = ($max_pagesize < $pagesize) ? $max_page_size : $pagesize;
+    $pagesize = ($max_pagesize < $pagesize) ? $max_pagesize : $pagesize;
 
     // Build an EFQ based on the arguments.
     $query = new EntityFieldQuery();
