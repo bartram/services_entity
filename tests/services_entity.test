@@ -643,10 +643,15 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
       variable_set('services_entity_resource_class', 'ServicesEntityResourceController');
     }
 
+    // Create some users so we can have multiple authors.
+    $account1 = $this->drupalCreateUser(array('bypass node access'));
+    $account2 = $this->drupalCreateUser(array('bypass node access'));
+
     // Create some nodes
     for ($i = 0; $i < 6; $i++) {
       $values = array(
         'type' => $i < 4 ? 'page' : 'article',
+        'uid' => $i % 2 == 0 ? $account1->uid : $account2->uid,
         'title' => $this->randomName(8),
         'body' => array(
           LANGUAGE_NONE => array(
@@ -671,6 +676,28 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     $this->assertEqual(count($r), 4, 'Index returned the correct number of pages.');
     $r = $this->index($resource, array('parameters[type]' => 'article'));
     $this->assertEqual(count($r), 2, 'Index returned the correct number of articles.');
+
+    // Try filtering by uid/author
+    // We need a user with view profiles permission to see the author property.
+    $admin_user = $this->drupalCreateUser(array('access user profiles'));
+    $this->serviceLogin($admin_user->name, $admin_user->pass_raw);
+    foreach (array($account1, $account2) as $account) {
+      $author_field = $clean ? 'author' : 'uid';
+      //$this->use_xdebug = 1;
+      $r = $this->index($resource, array("parameters[$author_field]" => $account->uid));
+      $this->assertEqual(count($r), 3, 'Index returned the correct number of nodes by author ' . $account->uid);
+      foreach ($r as $node) {
+        if ($clean) {
+          $this->assertEqual($node['author']['id'], $account->uid, 'All returned nodes have the correct author ' . $account->uid);
+        }
+        else {
+          $this->assertEqual($node['uid'], $account->uid, 'All returned nodes have the correct author ' . $account->uid);
+        }
+      }
+    }
+
+    // Try filtering by an invalid property and verify that we get an error.
+    $result = $this->index($resource, array("parameters[foo]" => 3), 406);
   }
 
   /**

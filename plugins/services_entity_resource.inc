@@ -210,21 +210,28 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
    *   The general method name, without the words 'property' or 'field'. E.g.,
    *   one of 'Condition' or 'OrderBy'.
    * @param string $property
-   *   The property or field which is to be added to the query.
+   *   The name of the raw property or field which is to be added to the query.
    * @param string|array $value
    *   The value for the function.
    */
   protected function propertyQueryOperation($entity_type, EntityFieldQuery $query, $operation, $property, $value) {
-    $properties = entity_get_all_property_info($entity_type);
-
-    // If field is not set, then the filter is a property and we can extract
-    // the schema field from the property array.
-    if (empty($properties[$property]['field'])) {
-      $column = $properties[$property]['schema field'];
+    // First pass: check the entity's table schema.
+    // Get the database schema for the entity's table.
+    $entity_info = entity_get_info($entity_type);
+    $schema = drupal_get_schema($entity_info['base table']);
+    if (isset($schema['fields'][$property])) {
+      // If the property is defined in the schema, use the schema property.
+      // The EFQ method is either 'propertyCondition' or 'OrderByCondition'.
       $operation = 'property' . $operation;
-      $query->$operation($column, $value);
+      $query->$operation($property, $value);
+      return;
     }
-    else {
+
+    // Second pass: check fields.
+    // Get the metadata property info for the entity type, including properties
+    // for all bundles.
+    $properties = entity_get_all_property_info($entity_type);
+    if (isset($properties[$property]) && !empty($properties[$property]['field'])) {
       // For fields we need the field info to get the right column for the
       // query.
       $field_info = field_info_field($property);
@@ -242,7 +249,12 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
         $column = $columns[0];
         $query->$operation($field_info, $column, $value);
       }
+
+      return;
     }
+
+    // Still here if no matching property was found.
+    services_error(t('Parameter @prop does not exist', array('@prop' => $property)), 406);
   }
 
 }

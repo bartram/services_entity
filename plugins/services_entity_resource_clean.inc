@@ -232,4 +232,21 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
     }
     return $values;
   }
+
+  /**
+   * Overridden to translate metadata property name to schema field.
+   *
+   * @see ServicesEntityResourceController::propertyQueryOperation()
+   */
+  protected function propertyQueryOperation($entity_type, $query, $operation, $property, $value) {
+    $info = entity_get_all_property_info($entity_type);
+    $field = isset($info[$property]['schema field']) ? $info[$property]['schema field'] : $property;
+    try {
+      parent::propertyQueryOperation($entity_type, $query, $operation, $field, $value);
+    }
+    catch (ServicesException $e) {
+      // Intercept a services exception and correct the property name.
+      services_error(t('Parameter @prop does not exist', array('@p' => $property)), 406);
+    }
+  }
 }
