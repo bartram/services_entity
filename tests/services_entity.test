@@ -824,6 +824,11 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
       'type' => 'page',
       'title' => $this->randomName(10),
     );
+    // We need an author to create a node via clean controller
+    // See https://drupal.org/node/1237014
+    if ($clean) {
+      $node_sans_body['author'] = $account->uid;
+    }
     $created_node_sans_body = $this->create($resource, $node_sans_body);
     $this->assertTrue($created_node_sans_body['nid'], 'Created Node without body has a response with a node id');
 
