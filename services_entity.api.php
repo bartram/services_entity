@@ -19,6 +19,8 @@
  *	 - 'description': A short description of the controller.
  *   - 'class': The class name of the controller. This should be in a separate
  *     file included in the module .info file.
+ *
+ * @see hook_services_entity_resource_info_alter()
  */
 function hook_services_entity_resource_info() {
   $result = array();
@@ -30,4 +32,13 @@ function hook_services_entity_resource_info() {
   );
 
   return $result;
+}
+
+/**
+ * Allow modules to alter definitions of Services Entity resource plugins.
+ *
+ * @param $info
+ *  The info array from hook_services_entity_resource_info().
+ */
+function hook_services_entity_resource_info_alter(&$info) {
 }
