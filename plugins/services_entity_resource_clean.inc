@@ -238,7 +238,7 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
    *
    * @see ServicesEntityResourceController::propertyQueryOperation()
    */
-  protected function propertyQueryOperation($entity_type, $query, $operation, $property, $value) {
+  protected function propertyQueryOperation($entity_type, EntityFieldQuery $query, $operation, $property, $value) {
     $info = entity_get_all_property_info($entity_type);
     $field = isset($info[$property]['schema field']) ? $info[$property]['schema field'] : $property;
     try {
