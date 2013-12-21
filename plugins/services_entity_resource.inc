@@ -13,10 +13,20 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
       // Access is handled per-entity by index().
       return TRUE;
     }
+    // For create operations, we need to pass a new entity to entity_access()
+    // in order to check per-bundle creation rights. For all other operations
+    // we load the existing entity instead.
     if ($op == 'create') {
-      list($entity_type) = $args;
-      // Pass the entity to the access control.
-      return entity_access($op, $entity_type);
+      list($entity_type, $data) = $args;
+      // Workaround for bug in Entity API node access.
+      // @todo remove once https://drupal.org/node/1780646 lands.
+      if ($entity_type === 'node') {
+        return isset($data['type']) ? node_access('create', $data['type']) : FALSE;
+      }
+      // Create an entity from the data and pass this to entity_access(). This
+      // allows us to check per-bundle creation rights.
+      $entity = entity_create($entity_type, $data);
+      return entity_access($op, $entity_type, $entity);
     }
     else {
       // Retrieve, Delete, Update.

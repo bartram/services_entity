@@ -11,16 +11,28 @@
  * Much of this code is borrowed from restws module.
  */
 class ServicesEntityResourceControllerClean extends ServicesEntityResourceController {
+  /**
+   * @see ServicesEntityResourceController::access()
+   */
+  public function access($op, $args) {
+    if ($op == 'create') {
+      list($entity_type, $data) = $args;
+      // Workaround for bug in Entity API node access.
+      // @todo remove once https://drupal.org/node/1780646 lands.
+      if ($entity_type == 'node') {
+        return isset($data['type']) ? node_access('create', $data['type']) : FALSE;
+      }
+      // Create a wrapper from the entity so we can call its access() method.
+      $wrapper = $this->createWrapperFromValues($entity_type, $data);
+      return $wrapper->entityAccess('create');
+    }
+    else {
+      return parent::access($op, $args);
+    }
+  }
 
   public function create($entity_type, array $values) {
-    $property_info = entity_get_all_property_info($entity_type);
-    $values = $this->transform_values($entity_type, $property_info, $values);
-    try {
-      $wrapper = entity_property_values_create_entity($entity_type, $values);
-    }
-    catch (EntityMetadataWrapperException $e) {
-      services_error($e->getMessage(), 406);
-    }
+    $wrapper = $this->createWrapperFromValues($entity_type, $values);
 
     // Make sure that bundle information is present on entities that have
     // bundles. We have to do this after creating the wrapper, because the
@@ -248,5 +260,29 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
       // Intercept a services exception and correct the property name.
       services_error(t('Parameter @prop does not exist', array('@p' => $property)), 406);
     }
+  }
+
+  /**
+   * Helper function to create a wrapped entity from provided data values.
+   *
+   * @param $entity_type
+   *   The type of entity to be created.
+   * @param $values
+   *   Array of data property values.
+   * @return EntityDrupalWrapper
+   *   The wrapped entity.
+   * @todo the created wrapper should probably be statically cached, so we
+   * don't have to build it twice (first on access() and again on create()).
+   */
+  protected function createWrapperFromValues($entity_type, array &$values) {
+    $property_info = entity_get_all_property_info($entity_type);
+    $values = $this->transform_values($entity_type, $property_info, $values);
+    try {
+      $wrapper = entity_property_values_create_entity($entity_type, $values);
+    }
+    catch (EntityMetadataWrapperException $e) {
+      services_error($e->getMessage(), 406);
+    }
+    return $wrapper;
   }
 }

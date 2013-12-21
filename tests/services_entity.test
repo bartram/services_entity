@@ -766,7 +766,7 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
 
     // Test format access.
     // @todo restore this when https://drupal.org/node/2059845 lands.
-    $account = $this->drupalCreateUser(array('bypass node access'));
+    $account = $this->drupalCreateUser(array('create page content', 'edit any page content', 'delete any page content'));
     // $this->serviceLogin($account->name, $account->pass_raw);
     // $this->create($resource, $node, 403);
     // $this->serviceLogout();
@@ -786,25 +786,7 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
 
     // We cannot create a node with the clean controller because of [issue link]
     // @todo remove this conditional once that lands.
-    if ($clean) {
-      $temp_node = $this->drupalCreateNode(array(
-        'type' => $node['type'],
-        'title' => $node['title'],
-        'body' => array(
-          'und' => array(
-            '0' => array(
-              'value' => $node['body']['value'],
-              'format' => $node['body']['format'],
-              'summary' => $node['body']['summary'],
-            ),
-          )
-        )
-      ));
-      $created_node = $this->retrieve($resource, $temp_node->nid);
-    }
-    else {
-      $created_node = $this->create($resource, $node);
-    }
+    $created_node = $this->create($resource, $node);
     $this->assertTrue($created_node['nid'], t('node create response has a node id'));
     $nid = $created_node['nid'];
 
