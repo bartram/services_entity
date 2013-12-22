@@ -34,6 +34,13 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
   public function create($entity_type, array $values) {
     $wrapper = $this->createWrapperFromValues($entity_type, $values);
 
+    // Check write access on each property.
+    foreach (array_keys($values) as $name) {
+      if (!$this->propertyAccess($wrapper, $name, 'create')) {
+        services_error(t("Not authorized to set property '@p'", array('@p' => $name)), 403);
+      }
+    }
+
     // Make sure that bundle information is present on entities that have
     // bundles. We have to do this after creating the wrapper, because the
     // name of the bundle key may differ from that of the corresponding
@@ -80,8 +87,15 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
         // and unauthorized properties, even if they are not being changed. This
         // allows us to UPDATE a previously retrieved entity without removing
         // such properties from the payload, as long as they are unchanged.
-        if ($value != $wrapper->{$name}->raw()) {
+        if (!$this->propertyHasValue($wrapper, $name, $value)) {
+          // We set the property before checking access so the new value
+          // will be passed to the access callback. This is necesssary in
+          // some cases (e.g. text-format fields) where access permissions
+          // depend on the value that is being set.
           $wrapper->{$name}->set($value);
+          if (!$this->propertyAccess($wrapper, $name, 'update')) {
+            services_error(t("Not authorized to set property '@property-name'.", array('@property-name' => $name)), 403);
+          }
         }
       }
     }
@@ -284,5 +298,94 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
       services_error($e->getMessage(), 406);
     }
     return $wrapper;
+  }
+
+  /**
+   * Determine whether a wrapper property has a specified value.
+   *
+   * @param \EntityMetadataWrapper $wrapper
+   *   The wrapper whose property is to be checked.
+   * @param $name
+   *   The name of the property to check.
+   * @param mixed $value
+   *   The value to compare it to. May be a wrapper, identifier or raw value.
+   *
+   * @return boolean
+   *   TRUE if the property's current value is equal to the given value. FALSE
+   *   if they are different.
+   */
+  protected function propertyHasValue(EntityMetadataWrapper $wrapper, $name, $value) {
+    $property = $wrapper->{$name};
+    if ($property instanceof EntityDrupalWrapper) {
+      if ($value instanceof EntityDrupalWrapper) {
+        return $value->getIdentifier() == $property->getIdentifier();
+      }
+      elseif (is_numeric($value)) {
+        return $value == $property->getIdentifier();
+      }
+    }
+    return $value == $property->value();
+  }
+  
+  /**
+   * Check access on an entity metadata property.
+   *
+   * This is a wrapper around EntityMetadataWrapper::access() because that
+   * makes no distinction between 'create' and 'update' operations.
+   *
+   * @param EntityDrupalWrapper $wrapper
+   *   The wrapped entity for which the property access is to be checked.
+   * @param string $name
+   *   The wrapper name of the property whose access is to be checked.
+   * @param string $op
+   *   One of 'create', 'update' or 'view'.
+   *
+   * @return bool
+   *   TRUE if the current user has access to set the property, FALSE otherwise.
+   */
+  protected function propertyAccess($wrapper, $name, $op) {
+    $property = $wrapper->{$name};
+    $info = $property->info();
+    switch ($op) {
+      case 'create':
+        // Don't check access on bundle for new entities. Otherwise,
+        // property access checks will fail for, e.g., node type, which
+        // requires the 'administer nodes' permission to set.
+        // @see entity_metadata_node_entity_property_info().
+        if (isset($info['schema field']) && $info['schema field'] == $wrapper->entityKey('bundle')) {
+          return TRUE;
+        }
+  
+        // Don't check access on node author if set to the current user.
+        if ($wrapper->type() == 'node' && $name == 'author' && $wrapper->value()->uid == $GLOBALS['user']->uid) {
+          return TRUE;
+        }
+  
+        // No break: no special cases apply, so contine as for 'update'.
+  
+      case 'update':
+        // This is a hack to check format access for text fields.
+        // @todo remove once this is handled properly by core or Entity API.
+        // @see https://drupal.org/node/2065021
+        if ($property->type() == 'text_formatted' && $property->format->value()) {
+          $format = (object) array('format' => $property->format->value());
+          if (!filter_access($format)) {
+            return FALSE;
+          }
+        }
+  
+        // Entity API create access is currently broken for nodes.
+        // @todo remove this check once https://drupal.org/node/1780646 is fixed.
+        // @see also https://drupal.org/node/1865102
+        if ($op == 'create' && $wrapper->type() == 'node') {
+          return TRUE;
+        }
+  
+        // Finally, use the property access.
+        return $property->access('edit');
+  
+      case 'view':
+        return $property->access('view');
+    }
   }
 }

@@ -765,15 +765,13 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     $this->serviceLogout();
 
     // Test format access.
-    // @todo restore this when https://drupal.org/node/2059845 lands.
-    $account = $this->drupalCreateUser(array('create page content', 'edit any page content', 'delete any page content'));
-    // $this->serviceLogin($account->name, $account->pass_raw);
-    // $this->create($resource, $node, 403);
-    // $this->serviceLogout();
+    $unpriv_account = $this->drupalCreateUser(array('create page content', 'edit any page content', 'delete any page content'));
+    $this->serviceLogin($unpriv_account->name, $unpriv_account->pass_raw);
+    $this->create($resource, $node, 403);
+    $this->serviceLogout();
 
     // User with format access should be able to create the node.
-    // @todo replace 'bypass node access' with a more meaningful permission once https://drupal.org/node/1865102 lands.
-    //$account = $this->drupalCreateUser(array('bypass node access', 'use text format full_html'));
+    $account = $this->drupalCreateUser(array('bypass node access', 'use text format full_html'));
     $this->serviceLogin($account->name, $account->pass_raw);
 
     // Set the 'author' or 'uid' property, depending on which controller we're using.
@@ -798,7 +796,12 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     // Test an update of the created node.
     // Change our title and body.
     $created_node['title'] = $this->randomName(10);
-    $created_node['body']['value'] = $this->randomname(50);
+    if ($clean) {
+      $created_node['body']['value'] = $this->randomname(50);
+    }
+    else {
+      $created_node['body']['und'][0]['value'] = $this->randomname(50);
+    }
     $update_result = $this->update($resource, $nid, $created_node, 200);
     $drupal_node = $this->nodeLoad($nid, $clean);
     // @todo restore this once [insert issue -- generic-update-entity] lands
@@ -814,11 +817,27 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     // Test an update of the fetched node.
     // Change our title and body.
     $fetched_node['title'] = $this->randomName(10);
-    $fetched_node['body']['value'] = $this->randomname(50);
+    if ($clean) {
+      $fetched_node['body']['value'] = $this->randomname(50);
+    }
+    else {
+      $fetched_node['body']['und'][0]['value'] = $this->randomname(50);
+    }
     $update_result = $this->update($resource, $nid, $fetched_node, 200);
     $drupal_node = $this->nodeLoad($nid, $clean);
     $this->assertNodeProperties($update_result, $drupal_node, $test_properties, 'Fetched node UPDATE response');
     $this->assertNodeProperties($fetched_node, $drupal_node, $test_properties, 'Updated fetched node');
+
+    // Test updating with a disallowed text format in the body.
+    $drupal_node = node_load($nid, NULL, TRUE);
+    $drupal_node->body['und'][0]['format'] = filter_default_format();
+    node_save($drupal_node);
+    $this->serviceLogout();
+    $this->serviceLogin($unpriv_account->name, $unpriv_account->pass_raw);
+    $fetched_node['body']['format'] = 'full_html';
+    $this->update($resource, $nid, $fetched_node, 403);
+    $drupal_node = node_load($nid, NULL, TRUE);
+    $this->assertEqual($drupal_node->body['und'][0]['format'], filter_default_format(), 'Unprivileged user was unable to update with disallowed text format.');
 
     // Test a delete of a node.
     $delete_result = $this->delete($resource, $nid);
@@ -864,10 +883,17 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
 
     foreach ($keys as $name) {
       if (in_array($name, $special_fields)) {
+        // Clean controller.
         if (isset($aprop['format']) && isset($bprop['format'])) {
           // Compare the formatted values.
           $aprop = check_markup($aprop['value'], $aprop['format']);
           $bprop = check_markup($bprop['value'], $bprop['format']);
+        }
+        // Generic controller.
+        elseif (isset($aprop['und'][0]['format']) && isset($bprop['und'][0]['format'])) {
+          // Compare the formatted values.
+          $aprop = check_markup($aprop['und'][0]['value'], $aprop['und'][0]['format']);
+          $bprop = check_markup($bprop['und'][0]['value'], $bprop['und'][0]['format']);
         }
       }
       else {

@@ -43,6 +43,7 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
    * Implements ServicesResourceControllerInterface::create().
    */
   public function create($entity_type, array $values) {
+    $this->checkTextFormatAccess($values);
     $entity = entity_create($entity_type, $values);
     entity_save($entity_type, $entity);
     list($id, ) = entity_extract_ids($entity_type, $entity);
@@ -76,6 +77,7 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
    * Implements ServicesResourceControllerInterface::update().
    */
   public function update($entity_type, $entity_id, array $values) {
+    $this->checkTextFormatAccess($values);
     $wrapper = entity_metadata_wrapper($entity_type, (object) $values);
     if ($entity_id == $wrapper->getIdentifier()) {
       $wrapper->save();
@@ -267,4 +269,39 @@ class ServicesEntityResourceController implements ServicesResourceControllerInte
     services_error(t('Parameter @prop does not exist', array('@prop' => $property)), 406);
   }
 
+  /**
+   * This is a hack to check format access for text fields.
+   *
+   * @todo revisit if/when this is handled properly by core.
+   * @see https://drupal.org/node/2060237
+   *
+   * @param array $values
+   *   The raw values passed into the service, keyed by property name.
+   *
+   * @throws ServicesException
+   *   If user is not authorized to use a provided format.
+   */
+  public function checkTextFormatAccess($values) {
+    // Loop through all values looking for text fields.
+    foreach ($values as $name => $value) {
+      $field = field_info_field($name);
+      if ($field && in_array($field['type'], array_keys(text_field_info()))) {
+        foreach ($value as $langcode) {
+          foreach ($langcode as $item) {
+            if (isset($item['format'])) {
+              $format = (object) array('format' => $item['format']);
+              if (!filter_access($format)) {
+                // Fully load the format so we get its label.
+                $format = filter_format_load($format->format);
+                services_error(t("Not authorized to use format '@format-name' for property '@property-name'.", array(
+                  '@format-name' => $format->name,
+                  '@property-name' => $name,
+                )), 403);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
