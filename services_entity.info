@@ -10,6 +10,5 @@ files[] = plugins/services_entity_interface.inc
 files[] = plugins/services_entity_abstract.inc
 files[] = plugins/services_entity_resource.inc
 files[] = plugins/services_entity_resource_clean.inc
-files[] = plugins/services_entity_resource_recurse.inc
 
 configure = admin/config/services/services-entity
