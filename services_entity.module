@@ -6,8 +6,9 @@
 function services_entity_menu() {
   $items = array();
 
-  $items['admin/structure/services/entity'] = array(
-    'title' => 'Services Entity Settings',
+  $items['admin/config/services/services-entity'] = array(
+    'title' => 'Services Entity settings',
+    'description' => 'Configure entity resources provided by Services.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('services_entity_settings_form'),
     'access arguments' => array('administer services'),
