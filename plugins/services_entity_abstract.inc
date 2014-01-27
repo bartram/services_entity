@@ -122,15 +122,20 @@ abstract class ServicesResourceControllerAbstract implements ServicesResourceCon
   public function resourceInfo($entity_type) {
     $info = array();
 
+    $entity_info = entity_get_info($entity_type);
+    $replacements = array(
+      '@type' => $entity_info['label'],
+    );
+
     // Create.
     if (entity_type_supports($entity_type, 'create')) {
       $info['create'] = $this->getInfoElement($entity_type, 'create', 'create', FALSE, TRUE);
-      $info['create']['help'] = "Creates a $entity_type entity.";
+      $info['create']['help'] = t("Creates an entity of type @type.", $replacements);
     }
 
     // Retrieve.
     $info['retrieve'] = $this->getInfoElement($entity_type, 'retrieve', 'view', TRUE, FALSE);
-    $info['retrieve']['help'] = "Retrieves a $entity_type entity.";
+    $info['retrieve']['help'] = t("Retrieves an entity of type @type.", $replacements);
     $info['retrieve']['args'][] = array(
       'name' => 'fields',
       'optional' => TRUE,
@@ -143,18 +148,18 @@ abstract class ServicesResourceControllerAbstract implements ServicesResourceCon
     // Update.
     if (entity_type_supports($entity_type, 'save')) {
       $info['update'] = $this->getInfoElement($entity_type, 'update', 'update', TRUE, TRUE);
-      $info['update']['help'] = "Updates a $entity_type entity";
+      $info['update']['help'] = t("Updates an entity of type @type.", $replacements);
     }
 
     // Delete.
     if (entity_type_supports($entity_type, 'delete')) {
       $info['delete'] = $this->getInfoElement($entity_type, 'delete', 'delete', TRUE, FALSE);
-      $info['delete']['help'] = "Deletes a $entity_type entity";
+      $info['delete']['help'] =  t("Deletes an entity of type @type.", $replacements);
     }
 
     // Index.
     $info['index'] = $this->getInfoElement($entity_type, 'index', 'index', FALSE, FALSE);
-    $info['index']['help'] = "Retrieves a list of $entity_type entities.";
+    $info['index']['help'] =  t("Retrieves a list of entities of type @type.", $replacements);
     /**
      * Fields to return.
      *
