@@ -12,4 +12,4 @@ files[] = plugins/services_entity_resource.inc
 files[] = plugins/services_entity_resource_clean.inc
 files[] = plugins/services_entity_resource_recurse.inc
 
-configure = admin/structure/services/entity
+configure = admin/config/services/services-entity
