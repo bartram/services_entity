@@ -11,6 +11,19 @@
 interface ServicesResourceControllerInterface {
 
   /**
+   * Specify services resource informatino for an entity type.
+   *
+   * @param string $entity_type
+   *   The entity type whose info should be specified.
+   *
+   * @return
+   *   An info array as would be returned by hook_services_resources().
+   *
+   * @see hooK_services_resources().
+   */
+  public function resourceInfo($entity_type);
+
+  /**
    * Determines access for a given operation and resource.
    *
    * @param string $op
@@ -107,6 +120,5 @@ interface ServicesResourceControllerInterface {
    *  Entity data for the field.
    */
   public function field($entity_type, $entity_id, $field_name, $fields = '*', $raw = FALSE);
-
 }
 

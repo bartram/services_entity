@@ -26,8 +26,8 @@ function services_entity_settings_form($form, $form_state) {
   }
 
   $form['services_entity_resource_class'] = array(
-    '#title' => 'Entity Resource Class',
-    '#description' => 'Select which Resource Controller to use to process the entities.',
+    '#title' => 'Default Entity Resource Class',
+    '#description' => 'Select which Resource Controller to use to process the entities where the entity type does not define one.',
     '#type' => 'radios',
     '#options' => $options,
     '#default_value' => variable_get('services_entity_resource_class', 'ServicesEntityResourceController'),
@@ -140,4 +140,24 @@ function services_entity_entity_query_alter($query) {
     $query->propertyCondition('vid', $vids, $conditions['bundle']['operator']);
     unset($conditions['bundle']);
   }
+}
+
+/**
+ * Gets an instance of the resource controller for an entity type.
+ *
+ * @param string $entity_type
+ *   The entity type.
+ *
+ * @return ServicesEntityResourceControllerInterface
+ *   A resource controller object.
+ */
+function _services_entity_get_controller($entity_type) {
+  $info = entity_get_info($entity_type);
+  if (isset($info['resource controller']) && class_exists($info['resource controller'])) {
+    $class = $info['resource controler'];
+  }
+  else {
+    $class = variable_get('services_entity_resource_class', 'ServicesEntityResourceController');
+  }
+  return new $class();
 }

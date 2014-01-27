@@ -3,7 +3,7 @@
 /**
  * Generic controller for entity-bases resources.
  */
-class ServicesEntityResourceController implements ServicesResourceControllerInterface {
+class ServicesEntityResourceController extends ServicesResourceControllerAbstract {
 
   /**
    * Implements ServicesResourceControllerInterface::access().
