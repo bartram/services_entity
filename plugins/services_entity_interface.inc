@@ -58,11 +58,14 @@ interface ServicesResourceControllerInterface {
    *   The id of the resource that should be returned.
    * @param array $fields (optional)
    *   The fields for the resource that should be returned.
+   * @param int $revision (optional)
+   *   The revision of the resource that should be returned.  If omitted,
+   *   the current revision will be returned.
    *
    * @return
    *   The internal representation of the resource.
    */
-  public function retrieve($entity_type, $entity_id, $fields);
+  public function retrieve($entity_type, $entity_id, $fields, $revision);
 
   /**
    * Update an existing resource.

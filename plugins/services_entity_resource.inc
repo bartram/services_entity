@@ -59,10 +59,22 @@ class ServicesEntityResourceController extends ServicesResourceControllerAbstrac
   /**
    * Implements ServicesResourceControllerInterface::retrieve().
    */
-  public function retrieve($entity_type, $entity_id, $fields) {
-    $entity = entity_load_single($entity_type, $entity_id);
+  public function retrieve($entity_type, $entity_id, $fields, $revision) {
+    if (!empty($revision)) {
+      // If a specific revision is requested, then retrieve it.
+      if ($entity = entity_revision_load($entity_type, $revision)) {
+        list($id) = entity_extract_ids($entity_type, $entity);
+        if ($id !== $entity_id) {
+          services_error('Requested revision id does not match the resource id.', 406);
+        }
+      }
+    }
+    else {
+      $entity = entity_load_single($entity_type, $entity_id);
+    }
+
     if (!$entity) {
-      services_error('Entity not found', 404);
+      services_error('Entity or revision not found', 404);
     }
     // Users get special treatment to remove sensitive data.
     if ($entity_type == 'user') {

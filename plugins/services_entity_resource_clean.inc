@@ -71,8 +71,8 @@ class ServicesEntityResourceControllerClean extends ServicesEntityResourceContro
     return $this->get_data($wrapper, '*');
   }
 
-  public function retrieve($entity_type, $entity_id, $fields) {
-    $entity = parent::retrieve($entity_type, $entity_id, '*');
+  public function retrieve($entity_type, $entity_id, $fields, $revision) {
+    $entity = parent::retrieve($entity_type, $entity_id, '*', $revision);
     return $this->get_data(entity_metadata_wrapper($entity_type, $entity), $fields);
   }
 

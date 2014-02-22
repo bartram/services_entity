@@ -812,16 +812,20 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     }
 
     // Test retrieving a specific revision.
-    // @todo complete these tests if/when https://drupal.org/node/1981890 lands.
-    // $nodes = $this->createNodeRevisions();
-    // foreach ($nodes as $node) {
-    // $retrieved = $this->retrieve($resource, $node->nid,
-    // array(
-    // 'revision' => $node->vid,
-    // 'XDEBUG_SESSION_START' => 'ECLIPSE_DBGP'
-    // ), 200);
-    // $this->assertEqual($retrieved->title, $node->title);
-    // }
+    $revisions = $this->createNodeRevisions();
+    foreach ($revisions as $revision) {
+      $retrieved = $this->retrieve($resource, $revision->nid,
+        array(
+          'revision' => $revision->vid,
+          // 'XDEBUG_SESSION_START' => 'ECLIPSE_DBGP'
+        ), 200);
+      $this->assertEqual($retrieved['title'], $revision->title, 'Revision ' . $revision->vid . ' has the correct title.');
+    }
+
+    // Ensure that retrieving the node without specifying a revision gets the
+    // most recent revision.
+    $retrieved = $this->retrieve($resource, $revision->nid);
+    $this->assertEqual($retrieved['title'], $revision->title, 'Plain retrieve gets the lastest revision.');
 
     // We are only going to test properties that we set explicitly.
     $test_properties = array_keys($node);
@@ -930,6 +934,38 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
 
     $drupal_node = $this->nodeLoad($created_node_sans_body['nid'], $clean);
     $this->assertNodeProperties($node_sans_body, $drupal_node, array_keys($node_sans_body), 'Created node without body');
+  }
+
+  /**
+   * Create several revisions of a node.
+   *
+   * @param int $number
+   *   The number of revisions to create.
+   *
+   * @return
+   *   An array containing the original node and revisions.
+   */
+  protected function createNodeRevisions($number = 3) {
+    $nodes = array();
+    for ($i = 0; $i < $number; $i++) {
+      if (empty($nodes)) {
+        $nodes[] = $this->drupalCreateNode(array('title' => $this->randomName()));
+      }
+      else {
+        $node = end($nodes);
+        $new_node = (object) array(
+          'nid' => $node->nid,
+          'vid' => $node->vid,
+          'uid' => $node->uid,
+          'type' => $node->type,
+          'title' => $this->randomName(),
+          'revision' => 1,
+        );
+        node_save($new_node);
+        $nodes[] = $new_node;
+      }
+    }
+    return $nodes;
   }
 
   /**

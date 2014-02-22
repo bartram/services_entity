@@ -144,6 +144,14 @@ abstract class ServicesResourceControllerAbstract implements ServicesResourceCon
       'default value' => '*',
       'source' => array('param' => 'fields'),
     );
+    $info['retrieve']['args'][] = array(
+      'name' => 'revision',
+      'optional' => TRUE,
+      'type' => 'int',
+      'description' => 'The specific revision to retrieve.',
+      'default value' => NULL,
+      'source' => array('param' => 'revision'),
+    );
 
     // Update.
     if (entity_type_supports($entity_type, 'save')) {
