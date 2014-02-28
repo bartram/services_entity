@@ -150,7 +150,7 @@ function services_entity_entity_query_alter($query) {
 function _services_entity_get_controller($entity_type) {
   $info = entity_get_info($entity_type);
   if (isset($info['resource controller']) && class_exists($info['resource controller'])) {
-    $class = $info['resource controler'];
+    $class = $info['resource controller'];
   }
   else {
     $class = variable_get('services_entity_resource_class', 'ServicesEntityResourceController');
