@@ -81,7 +81,6 @@ class ServicesEntityResourceController extends ServicesResourceControllerAbstrac
       // Use the helper that Services module already has.
       services_remove_user_data($entity);
     }
-    services_remove_user_data($entity);
     return $this->limit_fields($entity, $fields);
   }
 
