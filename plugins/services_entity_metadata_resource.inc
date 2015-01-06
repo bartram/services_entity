@@ -406,7 +406,12 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
    *   TRUE if the current user has access to set the property, FALSE otherwise.
    */
   protected function propertyAccess($wrapper, $name, $op) {
-    $property = $wrapper->{$name};
+    if ($wrapper instanceof EntityListWrapper) {
+      $property = $wrapper->get($name);
+    }
+    else {
+      $property = $wrapper->{$name};
+    }
     try {
       switch ($op) {
         case 'create':
