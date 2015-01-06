@@ -307,7 +307,7 @@ class ServicesEntityResourceController extends ServicesResourceControllerAbstrac
                 services_error(t("Not authorized to use format '@format-name' for property '@property-name'.", array(
                   '@format-name' => $format->name,
                   '@property-name' => $name,
-                )), 403);
+                )), 401);
               }
             }
           }

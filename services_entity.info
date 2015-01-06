@@ -10,6 +10,9 @@ files[] = plugins/services_entity_interface.inc
 files[] = plugins/services_entity_abstract.inc
 files[] = plugins/services_entity_resource.inc
 files[] = plugins/services_entity_resource_clean.inc
+files[] = plugins/services_entity.processor.inc
+files[] = plugins/services_entity.formatter.inc
+files[] = plugins/services_entity_metadata_resource.inc
 
 configure = admin/config/services/services-entity
 

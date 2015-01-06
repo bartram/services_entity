@@ -75,9 +75,14 @@ function services_entity_services_entity_resource_info() {
     'class' => 'ServicesEntityResourceController',
   );
   $result['clean'] = array(
-    'title' => 'Clean Entity Processor',
-    'description' => 'An entity wrapper that strips out "drupalisms" such as the array structure and field_ prefixes.',
+    'title' => 'DEPRECATED: Clean Entity Processor',
+    'description' => 'An entity wrapper that strips out "drupalisms" such as the array structure and field_ prefixes. This controller has been deprecated and is no longer supported.',
     'class' => 'ServicesEntityResourceControllerClean',
+  );
+  $result['metadata'] = array(
+    'title' => 'Metadata Entity Processor',
+    'description' => 'An entity wrapper that represents entities as described by their metadata property info.',
+    'class' => 'ServicesEntityMetadataResourceController',
   );
 
   return $result;

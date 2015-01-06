@@ -43,6 +43,58 @@ function services_entity_test_entity_info() {
 }
 
 /**
+ * Implements hook_entity_property_info();
+ */
+function services_entity_test_entity_property_info() {
+  $properties = array();
+  $properties['eid'] = array(
+    'type' => 'int',
+    'label' => t('ID'),
+    'description' => t('The id of the entity'),
+    'schema field' => 'eid',
+  );
+  $properties['type'] = array(
+    'type' => 'string',
+    'label' => t('Type'),
+    'description' => t('The type of entity'),
+    'schema field' => 'type',
+  );
+  $properties['generic_entity_reference'] = array(
+    'label' => t("Generic Entity Reference"),
+    'type' => 'entity',
+    'description' => t("A reference to an entity of unknown type."),
+    'setter callback' => 'services_entity_test_reference_set',
+    'getter callback' => 'services_entity_test_reference_get',
+  );
+  return array(
+    'services_entity_test' => array(
+      'properties' => $properties,
+    ),
+  );
+}
+
+/**
+ * Setter callback for the reference property.
+ */
+function services_entity_test_reference_set($item, $property_name, $wrapper) {
+  $item->refid = $wrapper->getIdentifier();
+  $item->reftype = $wrapper->type();
+}
+
+/**
+ * Getter callback for the reference property.
+ */
+function services_entity_test_reference_get($item) {
+  // As the property is defined as 'entity', we have to return a wrapped entity.
+  if (isset($item->reftype) && isset($item->refid)) {
+    return entity_metadata_wrapper($item->reftype, $item->refid);
+  }
+  else {
+    return NULL;
+  }
+}
+
+/**
  * Implements callback_entity_info_access().
  */
 function services_entity_test_access($op, $entity, $account, $entity_type) {

@@ -10,17 +10,20 @@ retrieve, update, delete, and index.
 Entity types must declare an access callback (see entity_crud_hook_entity_info()
 in Entity API's hook documentation, and also entity_access()).
 
-Entity Processors
+Entity Controllers
 -----------------
 
-Services Entity comes with two entity processors. These determine the way in
-which the provided resources handle parameters:
+Services Entity comes with two entity controllers. These determine the way in
+which the provided resources represent the underlying entities.
 
-* The Generic Entity Processor returns and expects an entity structure exactly
+* The Generic Entity Controller returns and expects an entity structure exactly
   as Drupal uses internally.
-* The Clean Entity Processor uses a simplified version of the entity structure,
-  with 'Drupalisms' such as deep field arrays removed. It also uses Entity API
-  metadata property names instead of entity schema property names.
+* The Entity Metadata Controller represents entities as described by their
+  metdata properties. Only properties exposed by the metadata API may be
+  read or written. Property level access and validation callbacks are
+  respected.
+
+The "clean" controller has been deprecated in favor of the metadata controller.
 
 Resources
 ---------
@@ -76,3 +79,9 @@ following services are defined:
   operations. You may extend this to add additional arguments, actions or
   relationships. Note: this class provides definitions only; you must extend to
   provide implementations yourself.
+  
+  The "Metadata" controller implements separate interfaces for handling input
+  values (ServicesEntityMetadataResourceProcessor) and for generating the
+  output representation (ServicesEntityMetadataResourceFormatter). You may
+  thus inject custom handlers for either of these behaviors separately.
+  

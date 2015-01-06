@@ -38,6 +38,20 @@ function services_entity_test_schema() {
         'default' => NULL,
         'description' => "The {users}.uid of the associated user.",
       ),
+      'refid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => 'The id of a referenced entity',
+      ),
+      'reftype' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => 'The type of a referenced entity.',
+      ),
     ),
     'indexes' => array(
       'uid' => array('uid'),

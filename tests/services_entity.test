@@ -662,7 +662,7 @@ class ServicesEntityGenericEntityResource extends ServicesEntityTestHelper {
 }
 
 /**
- * Tests entity_node services for both the generic and clean controller.
+ * Tests entity_node services for both the generic and metadata controller.
  */
 class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
   /**
@@ -690,22 +690,22 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
   // */ public function setUp() { $this->setup = TRUE; $this->endpoint = services_endpoint_load('services'); $this->cookieFile = drupal_tempnam(variable_get('file_temporary_path'), 'services_cookiejar'); $this->additionalCurlOptions[CURLOPT_COOKIEFILE] = $this->cookieFile;} public function tearDown()  {}
 
   /**
-   * Test index functionality with the clean controller.
+   * Test index functionality with the metadata controller.
    */
-  public function testIndexClean() {
+  public function testIndexMetadata() {
     $this->testIndex(TRUE);
   }
 
   /**
    * Test index functionality.
    *
-   * @param boolean $clean
-   *   TRUE to use the clean controller, FALSE to use the generic.
+   * @param boolean $metadata
+   *   TRUE to use the metadata controller, FALSE to use the generic.
    */
-  public function testIndex($clean = FALSE) {
+  public function testIndex($metadata = FALSE) {
     // Choose the controller.
-    if ($clean) {
-      variable_set('services_entity_resource_class', 'ServicesEntityResourceControllerClean');
+    if ($metadata) {
+      variable_set('services_entity_resource_class', 'ServicesEntityMetadataResourceController');
     }
     else {
       variable_set('services_entity_resource_class', 'ServicesEntityResourceController');
@@ -750,12 +750,12 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     $admin_user = $this->drupalCreateUser(array('access user profiles'));
     $this->serviceLogin($admin_user->name, $admin_user->pass_raw);
     foreach (array($account1, $account2) as $account) {
-      $author_field = $clean ? 'author' : 'uid';
+      $author_field = $metadata ? 'author' : 'uid';
       //$this->use_xdebug = 1;
       $r = $this->index($resource, array("parameters[$author_field]" => $account->uid));
       $this->assertEqual(count($r), 3, 'Index returned the correct number of nodes by author ' . $account->uid);
       foreach ($r as $node) {
-        if ($clean) {
+        if ($metadata) {
           $this->assertEqual($node['author']['id'], $account->uid, 'All returned nodes have the correct author ' . $account->uid);
         }
         else {
@@ -769,21 +769,21 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
   }
 
   /**
-   * Tests node services using the 'clean' resource controller.
+   * Tests node services using the 'metadata' resource controller.
    */
-  public function testCRUDClean() {
+  public function testCRUDMetadata() {
     $this->testCRUD(TRUE);
   }
 
   /**
    * Tests basic CRUD and index actions of a node via the entity_node service.
    */
-  public function testCRUD($clean = FALSE) {
+  public function testCRUD($metadata = FALSE) {
     $resource = 'entity_node';
     // Certain things are different depending on whether or not we are using
-    // the 'clean' resource controller.
-    if ($clean) {
-      variable_set('services_entity_resource_class', 'ServicesEntityResourceControllerClean');
+    // the 'metadata' resource controller.
+    if ($metadata) {
+      variable_set('services_entity_resource_class', 'ServicesEntityMetadataResourceController');
       $node = array(
         'type' => 'page',
         'title' => $this->randomName(10),
@@ -817,7 +817,7 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
       $retrieved = $this->retrieve($resource, $revision->nid,
         array(
           'revision' => $revision->vid,
-          // 'XDEBUG_SESSION_START' => 'ECLIPSE_DBGP'
+          //'XDEBUG_SESSION_START' => 'ECLIPSE_DBGP'
         ), 200);
       $this->assertEqual($retrieved['title'], $revision->title, 'Revision ' . $revision->vid . ' has the correct title.');
     }
@@ -833,13 +833,15 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     // Test node access
     $account = $this->drupalCreateUser(array());
     $this->serviceLogin($account->name, $account->pass_raw);
+    //$this->use_xdebug = 1;
     $this->create($resource, $node, 401);
     $this->serviceLogout();
 
     // Test format access.
     $unpriv_account = $this->drupalCreateUser(array('create page content', 'edit any page content', 'delete any page content'));
     $this->serviceLogin($unpriv_account->name, $unpriv_account->pass_raw);
-    $this->create($resource, $node, 403);
+    //$this->use_xdebug = 1;
+    $this->create($resource, $node, 401);
     $this->serviceLogout();
 
     // User with format access should be able to create the node.
@@ -847,37 +849,36 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     $this->serviceLogin($account->name, $account->pass_raw);
 
     // Set the 'author' or 'uid' property, depending on which controller we're using.
-    if ($clean) {
+    if ($metadata) {
       $node['author'] = $account->uid;
     }
     else {
       $node['uid'] = $account->uid;
     }
 
-    // We cannot create a node with the clean controller because of [issue link]
-    // @todo remove this conditional once that lands.
     $created_node = $this->create($resource, $node);
     $this->assertTrue($created_node['nid'], t('node create response has a node id'));
     $nid = $created_node['nid'];
 
     // Verify that the actual node was created.
-    $drupal_node = $this->nodeLoad($nid, $clean);
+    $drupal_node = $this->nodeLoad($nid, $metadata);
     $this->assertNodeProperties($created_node, $drupal_node, $test_properties, 'Node CREATE response');
     $this->assertNodeProperties($node, $drupal_node, $test_properties, 'Created node');
 
     // Test an update of the created node.
     // Change our title and body.
     $created_node['title'] = $this->randomName(10);
-    if ($clean) {
+    if ($metadata) {
       $created_node['body']['value'] = $this->randomname(50);
     }
     else {
       $created_node['body']['und'][0]['value'] = $this->randomname(50);
     }
+    //$this->use_xdebug = 1;
     $update_result = $this->update($resource, $nid, $created_node, 200);
-    $drupal_node = $this->nodeLoad($nid, $clean);
+    $drupal_node = $this->nodeLoad($nid, $metadata);
     // @todo restore this once [insert issue -- generic-update-entity] lands
-    if (!$clean) {
+    if (!$metadata) {
       $this->assertNodeProperties($update_result, $drupal_node, $test_properties, 'Created node UPDATE response');
     }
     $this->assertNodeProperties($created_node, $drupal_node, $test_properties, 'Updated created node');
@@ -889,14 +890,14 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     // Test an update of the fetched node.
     // Change our title and body.
     $fetched_node['title'] = $this->randomName(10);
-    if ($clean) {
+    if ($metadata) {
       $fetched_node['body']['value'] = $this->randomname(50);
     }
     else {
       $fetched_node['body']['und'][0]['value'] = $this->randomname(50);
     }
     $update_result = $this->update($resource, $nid, $fetched_node, 200);
-    $drupal_node = $this->nodeLoad($nid, $clean);
+    $drupal_node = $this->nodeLoad($nid, $metadata);
     $this->assertNodeProperties($update_result, $drupal_node, $test_properties, 'Fetched node UPDATE response');
     $this->assertNodeProperties($fetched_node, $drupal_node, $test_properties, 'Updated fetched node');
 
@@ -907,7 +908,7 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     $this->serviceLogout();
     $this->serviceLogin($unpriv_account->name, $unpriv_account->pass_raw);
     $fetched_node['body']['format'] = 'full_html';
-    $this->update($resource, $nid, $fetched_node, 403);
+    $this->update($resource, $nid, $fetched_node, 401);
     $drupal_node = node_load($nid, NULL, TRUE);
     $this->assertEqual($drupal_node->body['und'][0]['format'], filter_default_format(), 'Unprivileged user was unable to update with disallowed text format.');
 
@@ -919,20 +920,33 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
     $drupal_node = node_load($nid, NULL, TRUE);
     $this->assertFalse($drupal_node, 'The deleted node was removed from the db.');
 
+    // Test creating a node with the wrong author (metadata controller only).
+    // This will fail until node create property access is fixed
+    // @see ServicesEntityMetadataResourceController::propertyAccess()
+    //if ($metadata) {
+    //  $r = $node_with_wrong_author = array(
+    //    'type' => 'page',
+    //    'author' => $account->uid,
+    //    'title' => $this->randomName(),
+    //  );
+    //  $this->create($resource, $node_with_wrong_author, 401);
+    //}
+
     // Test creating a node without a body field.
     $node_sans_body = array(
       'type' => 'page',
       'title' => $this->randomName(10),
     );
-    // We need an author to create a node via clean controller
+    // We need an author to create a node via metadata controller
     // See https://drupal.org/node/1237014
-    if ($clean) {
-      $node_sans_body['author'] = $account->uid;
-    }
+    //if ($metadata) {
+    //  $node_sans_body['author'] = $unpriv_account->uid;
+    //}
+    //$this->use_xdebug = 1;
     $created_node_sans_body = $this->create($resource, $node_sans_body);
     $this->assertTrue($created_node_sans_body['nid'], 'Created Node without body has a response with a node id');
 
-    $drupal_node = $this->nodeLoad($created_node_sans_body['nid'], $clean);
+    $drupal_node = $this->nodeLoad($created_node_sans_body['nid'], $metadata);
     $this->assertNodeProperties($node_sans_body, $drupal_node, array_keys($node_sans_body), 'Created node without body');
   }
 
@@ -987,7 +1001,7 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
 
     foreach ($keys as $name) {
       if (in_array($name, $special_fields)) {
-        // Clean controller.
+        // Metadata controller.
         if (isset($aprop['format']) && isset($bprop['format'])) {
           // Compare the formatted values.
           $aprop = check_markup($aprop['value'], $aprop['format']);
@@ -1014,20 +1028,90 @@ class ServicesEntityNodeResourceTest extends ServicesEntityTestHelper {
    *
    * @param $nid
    *   The node to load.
-   * @param $clean
-   *   If TRUE, use the ServicesResourceControllerClean class.
+   * @param $metadata
+   *   If TRUE, use the ServicesResourceMetadataController class.
    * @return
    *   The loaded, processed node.
    */
-  public function nodeLoad($nid, $clean = FALSE) {
+  public function nodeLoad($nid, $metadata = FALSE) {
     $node = $this->unObject(node_load($nid, NULL, TRUE));
 
-    if ($clean) {
+    if ($metadata) {
       $node['author'] = $node['uid'];
       if (!empty($node['body'])) {
         $node['body'] = reset($node['body'][$node['language']]);
       }
     }
     return $node;
+  }
+}
+
+/**
+ * Test cases for
+ * @author chriso
+ *
+ */
+class ServicesEntityGenericEntityMetadataResourceTest extends ServicesEntityGenericEntityResource {
+  /**
+   * Returns information about this test case.
+   *
+   * @return
+   *   An array of information about this test case
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Generic Entity Metadata Resource',
+      'description' => 'Ensure that the generic entity metadata resource controller functions correctly.',
+      'group' => 'Services Entity',
+    );
+  }
+
+  /**
+   * @see ServicesEntityGenericEntityResource::setUp()
+   */
+  public function setUp() {
+    $this->services_entity_resource_class = 'ServicesEntityMetadataResourceController';
+    parent::setUp();
+  }
+
+  // @todo implement these tests.
+  public function testEntityIndex() {}
+  public function testEntityUpdate() {}
+  public function testEntityRetrieve() {}
+
+  /**
+   * Tests entity creation using the clean controller.
+   *
+   * @see ServicesEntityGenericEntityResource::testEntityCreate()
+   */
+  public function testEntityCreate() {
+    // Create our privileged user.
+    $this->privilegedUser = $this->drupalCreateUser(array(
+      'view services_entity_test entities',
+      'create services_entity_test entities',
+      'update services_entity_test entities',
+    ));
+
+    // Create a reference.
+    $reference = $this->drupalCreateNode(array('type' => 'page', 'title' => 'foo'));
+
+    // Log in and attempt to create an entity.
+    $this->serviceLogin($this->privilegedUser->name, $this->privilegedUser->pass_raw);
+    $values = array(
+      'type' => 'alpha',
+      'generic_entity_reference' => array(
+        'id' => $reference->nid,
+        'resource' => 'node',
+      ),
+    );
+    $r = $this->create('entity_services_entity_test', $values);
+    $this->assertTrue($r['eid'], 'The created entity has an id.');
+    $this->assertEqual($r['type'], 'alpha', 'The bundle of the created entity is correct');
+    $this->assertEqual($r['generic_entity_reference']['id'], $reference->nid, 'The referenced entity id is correct');
+    $this->assertEqual($r['generic_entity_reference']['resource'], 'node', 'The referenced entity type is correct');
+
+    $entity = entity_load_single('services_entity_test', $r['eid']);
+    $this->assertEqual($entity->refid, $reference->nid, 'The saved entity has the correct refid.');
+    $this->assertEqual($entity->reftype, 'node', 'The saved entity has the correct reftype.');
   }
 }
