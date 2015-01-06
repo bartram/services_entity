@@ -198,12 +198,14 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
       'id' => $id,
       'resource' => $resource,
     );
+/*
     if (module_exists('uuid') && entity_get_info($resource)) {
       $ids = entity_get_uuid_by_id($resource, array($id));
       if ($id = reset($ids)) {
         $return['uuid'] = $id;
       }
     }
+*/
     return $return;
   }
 
