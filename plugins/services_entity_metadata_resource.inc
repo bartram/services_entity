@@ -201,20 +201,36 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
    *   A referene to the resource.
    */
   protected function getResourceReference($resource, $id) {
-    $return = array(
-      'uri' => services_resource_uri(array('entity_' . $resource, $id)),
-      'id' => $id,
-      'resource' => $resource,
-    );
-/*
-    if (module_exists('uuid') && entity_get_info($resource)) {
-      $ids = entity_get_uuid_by_id($resource, array($id));
-      if ($id = reset($ids)) {
-        $return['uuid'] = $id;
+    
+    if ($resource == 'file') {
+
+      $file = file_load($id);
+      $return = array(
+        'uri' => file_create_url($file->uri),
+        'id' => $id,
+        'resource' => $resource,
+      );
+
+      switch ($file->type) {
+        case 'image':
+          // @todo include image styles
+          $styles = image_styles();
+          foreach ($styles as $style_name => $style) {
+            $return[$style_name] = image_style_url($style_name, $file->uri);
+          }
+          break;
       }
+      
     }
-*/
+    else {
+      $return = array(
+        'uri' => services_resource_uri(array('entity_' . $resource, $id)),
+        'id' => $id,
+        'resource' => $resource,
+      );
+    }
     return $return;
+
   }
 
   /**
@@ -456,7 +472,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
 
         case 'retrieve':
         case 'index':
-            return $property->access('view');
+          return $property->access('view');
       }
     }
     catch (EntityMetaDataWrapperException $e) {
