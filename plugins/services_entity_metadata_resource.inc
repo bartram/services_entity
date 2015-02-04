@@ -245,7 +245,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
     }
     catch (ServicesException $e) {
       // Intercept a services exception and correct the property name.
-      services_error(t('Parameter @prop does not exist', array('@p' => $property)), 406);
+      services_error(t('Parameter @prop does not exist', array('@prop' => $property)), 406);
     }
   }
 

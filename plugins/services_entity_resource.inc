@@ -238,19 +238,7 @@ class ServicesEntityResourceController extends ServicesResourceControllerAbstrac
    *   The value for the function.
    */
   protected function propertyQueryOperation($entity_type, EntityFieldQuery $query, $operation, $property, $value) {
-    // First pass: check the entity's table schema.
-    // Get the database schema for the entity's table.
-    $entity_info = entity_get_info($entity_type);
-    $schema = drupal_get_schema($entity_info['base table']);
-    if (isset($schema['fields'][$property])) {
-      // If the property is defined in the schema, use the schema property.
-      // The EFQ method is either 'propertyCondition' or 'OrderByCondition'.
-      $operation = 'property' . $operation;
-      $query->$operation($property, $value);
-      return;
-    }
-
-    // Second pass: check fields.
+    // First pass: check fields.
     // Get the metadata property info for the entity type, including properties
     // for all bundles.
     $properties = entity_get_all_property_info($entity_type);
@@ -273,6 +261,13 @@ class ServicesEntityResourceController extends ServicesResourceControllerAbstrac
         $query->$operation($field_info, $column, $value);
       }
 
+      return;
+    }
+    else if (isset($properties[$property])) {
+      // If the property is defined in the schema, use the schema property.
+      // The EFQ method is either 'propertyCondition' or 'OrderByCondition'.
+      $operation = 'property' . $operation;
+      $query->$operation($property, $value);
       return;
     }
 
