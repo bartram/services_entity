@@ -82,14 +82,14 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
    * @see ServicesEntityResourceController::index()
    */
   public function index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction) {
-    
+
     // @todo move this to a custom controller
     $query = new EntityFieldQuery;
     $query->entityCondition('entity_type', $entity_type);
     $query->count();
     $result = $query->execute();
     drupal_add_http_header('X-Resource-Count', $result);
-    
+
     // Call the parent method, which takes care of access control.
     $entities = parent::index($entity_type, '*', $parameters, $page, $pagesize, $sort, $direction);
     $return = array();
@@ -201,7 +201,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
    *   A referene to the resource.
    */
   protected function getResourceReference($resource, $id) {
-    
+
     if ($resource == 'file') {
 
       $file = file_load($id);
@@ -220,7 +220,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
           }
           break;
       }
-      
+
     }
     else {
       $return = array(
@@ -245,7 +245,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
     }
     catch (ServicesException $e) {
       // Intercept a services exception and correct the property name.
-      services_error(t('Parameter @prop does not exist', array('@p' => $property)), 406);
+      services_error(t('Parameter @prop does not exist', array('@prop' => $property)), 406);
     }
   }
 
