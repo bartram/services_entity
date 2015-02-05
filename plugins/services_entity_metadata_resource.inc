@@ -165,8 +165,15 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
           $data[$name] = $property->value();
         }
         elseif ($property instanceof EntityListWrapper || $property instanceof EntityStructureWrapper) {
-          // If property has further metadata, then recurse.
-          $data[$name] = $this->formatWrapper($property, NULL, $op);
+
+          if ($property->value()) {
+            // If property has further metadata, then recurse.
+            $data[$name] = $this->formatWrapper($property, NULL, $op);
+          }
+          else {
+            $data[$name] = NULL;
+          }
+
         }
       }
       catch (EntityMetadataWrapperException $e) {
