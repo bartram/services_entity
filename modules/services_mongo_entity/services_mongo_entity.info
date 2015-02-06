@@ -1,0 +1,6 @@
+name = Services Mongo Entity
+description = Automatically create targeted actions for embedded entities
+package = Services
+core = 7.x
+dependencies[] = services_entity
+dependencies[] = mongo_entity

@@ -1,0 +1,309 @@
+<?php
+
+/**
+ * Implements hook_services_resources().
+ */
+function services_mongo_entity_services_resources() {
+
+  $resource_info = array();
+
+  foreach (entity_get_property_info() as $entity_type => $property_info) {
+    foreach ($property_info['properties'] as $name => $info) {
+      if (_services_mongo_entity_property_is_embedded_entity($info)) {
+        _services_mongo_entity_resource_info($resource_info, $entity_type, $name, $info);
+      }
+    }
+
+    if (isset($property_info['bundles'])) {
+      foreach ($property_info['bundles'] as $bundle => $bundle_info) {
+        foreach ($bundle_info['properties'] as $name => $info) {
+          if (_services_mongo_entity_property_is_embedded_entity($info)) {
+            _services_mongo_entity_resource_info($resource_info, $entity_type, $name, $info);
+          }
+        }
+      }
+    }
+
+  }
+
+  return $resource_info;
+
+}
+
+/**
+ * Implements hook_services_resources_post_processing_alter().
+ */
+/*
+function services_mongo_entity_services_resources_post_processing_alter(&$resources, &$endpoint) {
+
+  // @todo cache this
+  $mongo_entity_resources = services_mongo_entity_services_resources();
+
+  foreach ($mongo_entity_resources as $resource_name => $resource_info) {
+    foreach ($resource_info['targeted_actions'] as $name => $info) {
+
+      if (isset($endpoint->resources[$resource_name])) {
+        $endpoint_resource = &$endpoint->resources[$resource_name];
+        $resource_alias = isset($endpoint_resource['alias']) ? $endpoint_resource['alias'] : $resource_name;
+
+        if (isset($endpoint_resource['targeted_actions'][$name]['alias']) && !empty($endpoint_resource['targeted_actions'][$name]['alias'])) {
+
+          $alias = $endpoint_resource['targeted_actions'][$name]['alias'];
+           $resources[$resource_name]['targeted_actions'][$alias] = $info;
+
+        }
+      }
+    }
+  }
+
+}
+*/
+
+/*
+function services_mongo_entity_form_services_edit_form_endpoint_resources_alter(&$form, &$form_state) {
+
+  $endpoint = $form_state['build_info']['args'][0];
+
+  $mongo_entity_resources = services_mongo_entity_services_resources();
+  foreach ($mongo_entity_resources as $resource_name => $resource_info) {
+    foreach ($resource_info['targeted_actions'] as $targeted_action_name => $info) {
+      $form['resources'][$resource_name]['targeted_actions'][$targeted_action_name]['alias'] = array(
+        '#type' => 'textfield',
+        '#default_value' => isset($endpoint->resources[$resource_name]['targeted_actions'][$targeted_action_name]['alias']) ? $endpoint->resources[$resource_name]['targeted_actions'][$targeted_action_name]['alias'] : NULL,
+        '#size' => 20,
+      );
+    }
+  }
+
+}
+
+function services_mongo_entity_theme() {
+
+  return array(
+    'services_resource_table' => array(
+     'render element' => 'table',
+     'function' => 'services_mongo_entity_services_resource_table',
+    ),
+  );
+
+}
+
+function services_mongo_entity_services_resource_table($variables) {
+  $table = $variables['table'];
+
+  drupal_add_css(drupal_get_path('module', 'services') . '/css/services.admin.css');
+  drupal_add_js(drupal_get_path('module', 'services') . '/js/services.admin.js');
+  drupal_add_js('misc/tableselect.js');
+
+  // Create header for resource selection table.
+  $header = array(
+    array('class' => array('select-all')),
+    array('data' => t('Resource'), 'class' => array('resource_method')),
+    array('data' => t('Settings'), 'class' => array('resource_settings')),
+    array('data' => t('Alias'), 'class' => array('resource_alias')),
+  );
+
+  // Define the images used to expand/collapse the method groups.
+  $js = array(
+    'images' => array(
+      'collapsed' => theme('image', array('path' => 'misc/menu-collapsed.png', 'alt' => t('Expand'), 'title' => t('Expand'))) . ' <a href="#" class="resource-collapse">(' . t('Expand') . ')</a>',
+      'expanded' => theme('image', array('path' => 'misc/menu-expanded.png', 'alt' => t('Collapse'), 'title' => t('Collapse'))) . ' <a href="#" class="resource-collapse">(' . t('Collapse') . ')</a>',
+    ),
+  );
+
+  // Cycle through each method group and create a row.
+  $rows = array();
+  foreach (element_children($table) as $key) {
+    $element = &$table[$key];
+    $row = array();
+
+    // Make the class name safe for output on the page by replacing all
+    // non-word/decimal characters with a dash (-).
+    $method_class = strtolower(trim(preg_replace("/[^\w\d]/", "-", $key)));
+
+    // Select the right "expand"/"collapse" image, depending on whether the
+    // category is expanded (at least one method selected) or not.
+    $collapsed = !empty($element['#collapsed']);
+
+    // Place-holder for checkboxes to select group of methods.
+    $row[] = array('id' => $method_class, 'class' => array('resource-select-all'));
+
+    // Expand/collapse image and group title.
+    $row[] = array(
+      'data' => '<div class="resource-image" id="resource-method-group-' . $method_class . '" data-resource="' . $method_class . '"></div>' .
+        '<label for="' . $method_class . '-select-all" class="resource-group-label">' . $key . '</label>',
+      'class' => array('resource-group-label'),
+    );
+
+    $row[] = array(
+      'data' => '&nbsp;',
+      'class' => array('resource-group-description'),
+    );
+    $row[] = array(
+      'data' => drupal_render($element['alias']),
+      'class' => array('resource-group-alias'),
+    );
+    $rows[] = array('data' => $row, 'class' => array('resource-group'));
+
+    // Add individual methods to group.
+    $current_js = array(
+      'methodClass' => $method_class . '-method',
+      'collapsed' => $collapsed,
+      'clickActive' => FALSE,
+    );
+
+    // Cycle through each method within the current group.
+    foreach (element_children($element) as $class) {
+      if($class != 'alias') {
+        $class_element = $element[$class];
+
+        // Add group (class) header row.
+        $rows[] = array('data' => array(NULL, array(
+          'data' => '<label>' . $class_element['#title'] . '</label>',
+          'class' => array('resource-operation-class'),
+        ), NULL, NULL), 'class' => array($method_class . '-method', 'resource-operation-class'));
+
+        foreach (element_children($class_element) as $op_name) {
+          $row = array();
+          $method = $class_element[$op_name];
+
+          // Store method title and description so that checkbox won't render them.
+          $title = $method['#title'];
+          $description = $method['#description'];
+
+          $method['#title_display'] = 'invisible';
+          $method['enabled']['#title_display'] = 'invisible';
+          unset($method['#description']);
+
+          // Test name is used to determine what methods to run.
+          $method['#name'] = $class;
+
+          $row[] = array(
+            'data' => drupal_render($method['enabled']),
+            'class' => array('resource-method-select'),
+          );
+          $row[] = array(
+            'data' => '<label for="' . $method['#id'] . '">' . $title . '</label>' . '<div class="description">' . $description . '</div>',
+            'class' => array('resource-method-description'),
+          );
+          $row[] = array(
+            'data' => drupal_render($method['settings']),
+            'class' => array('resource-method-settings'),
+          );
+          $row[] = array(
+            'data' => isset($method['alias']) ? drupal_render($method['alias']) : '<div class="alias">&nbsp;</div>',
+            'class' => array('resource-method-alias'),
+          );
+          $rows[] = array('data' => $row, 'class' => array($method_class . '-method', 'resource-method'));
+        }
+      }
+
+    }
+    $js['resources'][$method_class] = $current_js;
+    unset($table[$key]);
+  }
+
+  // Add js array of settings.
+  drupal_add_js(array('services' => $js), 'setting');
+
+  if (empty($rows)) {
+    return '<strong>' . t('No resourcess to display.') . '</strong>';
+  }
+  else {
+    return theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'resource-form-table')));
+  }
+}
+*/
+
+function _services_mongo_entity_property_is_embedded_entity($property_info) {
+
+  // @todo check if this is a struct
+  return (isset($property_info['entity type']));
+
+}
+
+function _services_mongo_entity_resource_info(&$resource_info, $entity_type, $property_name, $property_info) {
+
+  $embedded_entity_type = $property_info['entity type'];
+
+  $resource_info["entity_{$entity_type}"]['targeted_actions'][$property_name] = array(
+    'callback' => '_services_mongo_entity_resource_callback',
+    'access callback' => '_services_mongo_entity_access_callback',
+    'access arguments' => array('update', $entity_type),
+    'access arguments append' => TRUE,
+    'args' => array(
+      // This pseudo-argument is how we will pass the specific entity type to
+      // our generic callback.
+      array(
+        'name' => 'entity_type',
+        'type' => 'string',
+        'default value' => $entity_type,
+        'optional' => TRUE,  // Otherwise throws an error
+      ),
+      array(
+        'name' => 'entity_id',
+        'type' => 'int',
+        'source' => array('path' => 0),
+        'optional' => FALSE,
+      ),
+      array(
+        'name' => 'embedded_entity_type',
+        'type' => 'string',
+        'default value' => $embedded_entity_type,
+        'optional' => TRUE,
+      ),
+      array(
+        'name' => 'name',
+        'type' => 'string',
+        'default value' => $property_name,
+        'optional' => TRUE,
+      ),
+      array(
+        'name' => 'values',
+        'type' => 'array',
+        'source' => 'data',
+        'optional' => FALSE,
+      ),
+      array(
+        'name' => 'cardinality',
+        'type' => 'int',
+        'default value' => $property_info['type'] == 'list' ? 0 : 1,
+        'optional' => TRUE,
+      ),
+    ),
+  );
+
+}
+
+function _services_mongo_entity_resource_callback($entity_type, $entity_id, $embedded_entity_type, $name, $values, $cardinality = 1) {
+
+  $wrapper = entity_metadata_wrapper($entity_type, $entity_id);
+  $controller = _services_entity_get_controller($embedded_entity_type);
+  if ($controller instanceof ServicesEntityMetadataResourceProcessor) {
+    // @todo check that exercise result exercise is in program sessio
+    if ($cardinality == 1) {
+      $wrapper->{$name} = $controller->processValues($embedded_entity_type, $values, 'create');
+    }
+    else {
+      $wrapper->{$name}[] = $controller->processValues($embedded_entity_type, $values, 'create');
+    }
+    $wrapper->save();
+    return $controller->formatter->formatWrapper($wrapper, NULL, 'retrieve');
+  }
+  else {
+    services_error(t('Error adding !embedded_entity_type to !entity_type', array('!embedded_entity_type' => $embedded_entity_type, '!entity_type' => $entity_type)), 500);
+  }
+
+}
+
+function _services_mongo_entity_access_callback($op, $entity_type, $entity_id = NULL) {
+
+  if ($entity_id) {
+    $entity = entity_load_single($entity_type, $entity_id);
+    return entity_access($op, $entity_type, $entity_id);
+  }
+  else {
+    return entity_access($op, $entity_type);
+  }
+
+}
