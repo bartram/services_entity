@@ -55,7 +55,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
     $wrapper->save();
     // Rewrap to refresn any properties cached in the wrapper.
     $wrapper = entity_metadata_wrapper($entity_type, $wrapper->value());
-    return $this->formatter->formatWrapper($wrapper, NULL, 'create');
+    return $this->formatter->formatWrapper($wrapper, NULL, 'retrieve');
   }
 
   /**
@@ -416,15 +416,13 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
 
       case 'retrieve':
       case 'index':
-      case 'create':
         // For retrieve operations, we simply filter out properties to which
         // the user does not have access.
         return $this->propertyAccess($wrapper, $name, $op);
 
-/*
+      case 'create':
         // No
         return TRUE;
-*/
     }
   }
 
