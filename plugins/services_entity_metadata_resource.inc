@@ -416,13 +416,15 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
 
       case 'retrieve':
       case 'index':
+      case 'create':
         // For retrieve operations, we simply filter out properties to which
         // the user does not have access.
         return $this->propertyAccess($wrapper, $name, $op);
 
-      case 'create':
+/*
         // No
         return TRUE;
+*/
     }
   }
 
