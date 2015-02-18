@@ -109,11 +109,21 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
       services_error('Entity not found', 404);
     }
 
-    $field_name = preg_replace('/^field_/', '', $field_name);
+    $fields = $fields == '*' ? NULL : explode(',', $fields);
 
-    // The metadata wrapper checks entity_access() on each entity in the field.
-    $return = $this->formatter->formatWrapper(entity_metadata_wrapper($entity_type, $entity), $field_name);
-    return $return;
+    $wrapper = entity_metadata_wrapper($entity_type, $entity);
+    $field_wrapper = $wrapper->$field_name;
+    if ($field_wrapper instanceof EntityListWrapper) {
+      $return = array();
+      foreach ($field_wrapper as $value) {
+        $return[] = $this->formatter->formatWrapper($value, $fields);
+      }
+      return $return;
+    }
+    else {
+      return $this->formatter->formatWrapper($field_wrapper, $fields);
+    }
+
   }
 
   /**
