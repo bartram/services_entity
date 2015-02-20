@@ -303,7 +303,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
         // If the resource type is available, use a wrapper. This allows
         // us to set properties of the generic 'entity' type - for example
         // the field_collection_item's host_entity property.
-        $value = entity_metadata_wrapper($value['resource'], $value['id']);
+        $value = entity_metadata_wrapper($value['resource'], intval($value['id']));
       }
       else if (isset($value['resource'])) {
         // Create the new wrapper from the value. Don't pass 'resource' in
@@ -313,7 +313,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
         $value = $value->value();
       }
       else if (isset($value['id'])) {
-        $value = $value['id'];
+        $value = intval($value['id']);
       }
     }
     return $value;
