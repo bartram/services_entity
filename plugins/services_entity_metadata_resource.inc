@@ -287,6 +287,40 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
   }
 
   /**
+   * Helper function to take values or arrays of values and wrap them for creating new entities
+   * @param array $value
+   *   The values from createWrapperFromValues
+   * @param string $op
+   *   The operation from createWrapperFromValues
+   *
+   * @return object|array
+   *   The object or array of objects to pass to the wrapper setter
+   */
+  protected function getPropertyValue($value, $op) {
+
+    if (is_array($value) && (isset($value['id']) || (isset($value['resource'])))) {
+      if (isset($value['id']) && isset($value['resource'])) {
+        // If the resource type is available, use a wrapper. This allows
+        // us to set properties of the generic 'entity' type - for example
+        // the field_collection_item's host_entity property.
+        $value = entity_metadata_wrapper($value['resource'], $value['id']);
+      }
+      else if (isset($value['resource'])) {
+        // Create the new wrapper from the value. Don't pass 'resource' in
+        // the values, though...
+        $value = $this->createWrapperFromValues($value['resource'], array_diff_key($value, array('resource' => NULL)), $op);
+        // @todo eh, passing embedded entity metadata wrappers doesn't work all that well right now...
+        $value = $value->value();
+      }
+      else if (isset($value['id'])) {
+        $value = $value['id'];
+      }
+    }
+    return $value;
+
+  }
+
+  /**
    * Create a wrapped entity from provided data values.
    *
    * This method contains the implementation logic for processValues().
@@ -350,18 +384,18 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
 
       // Now loop through all remaining properties.
       foreach ($values as $name => $value) {
-        // Handle Resource references.
-        if (is_array($value) && isset($value['id'])) {
-          if (isset($value['resource'])) {
-            // If the resource type is available, use a wrapper. This allows
-            // us to set properties of the generic 'entity' type - for example
-            // the field_collection_item's host_entity property.
-            $value = entity_metadata_wrapper($value['resource'], $value['id']);
-          }
-          else {
-            $value = $value['id'];
+
+        // Loop through lists and convert entities into the right format
+        $propertyInfo = $wrapper->getPropertyInfo($name);
+        if (isset($propertyInfo['type']) && strpos($propertyInfo['type'], 'list') === 0) {
+          foreach ($value as &$item) {
+            $item = $this->getPropertyValue($item, $op);
           }
         }
+        else {
+          $value = $this->getPropertyValue($value, $op);
+        }
+
         if ($this->propertyFilter($wrapper, $name, $op, $value)) {
           $wrapper->$name->set($value);
           if (!$this->propertyAccess($wrapper, $name, $op)) {
