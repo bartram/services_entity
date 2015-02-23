@@ -158,7 +158,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
     $data = array();
     foreach ($wrapper as $name => $property) {
       // Skip filtered or non-requested properties.
-      if ((isset($fields) && !in_array($name, $fields_array)) || !$this->propertyFilter($wrapper, $name, $op)) {
+      if ((isset($fields) && !in_array($name, $fields)) || !$this->propertyFilter($wrapper, $name, $op)) {
         continue;
       }
 
