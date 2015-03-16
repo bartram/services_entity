@@ -225,7 +225,6 @@ function _services_mongo_entity_property_is_embedded_entity($property_info) {
 function _services_mongo_entity_resource_info(&$resource_info, $entity_type, $property_name, $property_info) {
 
   $embedded_entity_type = $property_info['entity type'];
-
   $resource_info["entity_{$entity_type}"]['targeted_actions'][$property_name] = array(
     'callback' => '_services_mongo_entity_resource_callback',
     'access callback' => '_services_mongo_entity_access_callback',
@@ -267,7 +266,7 @@ function _services_mongo_entity_resource_info(&$resource_info, $entity_type, $pr
       array(
         'name' => 'cardinality',
         'type' => 'int',
-        'default value' => $property_info['type'] == 'list' ? 0 : 1,
+        'default value' => strpos($property_info['type'], 'list') === 0 ? 0 : 1,
         'optional' => TRUE,
       ),
     ),
@@ -275,22 +274,28 @@ function _services_mongo_entity_resource_info(&$resource_info, $entity_type, $pr
 
 }
 
-function _services_mongo_entity_resource_callback($entity_type, $entity_id, $embedded_entity_type, $name, $values, $cardinality = 1) {
+function _services_mongo_entity_resource_callback($entity_type, $entity_id, $embedded_entity_type, $name, $values, $cardinality) {
 
-  $wrapper = entity_metadata_wrapper($entity_type, $entity_id);
+  $entity = entity_load_single($entity_type, $entity_id);
+  $wrapper = entity_metadata_wrapper($entity_type, $entity);
+
   $controller = _services_entity_get_controller($embedded_entity_type);
   if ($controller instanceof ServicesEntityMetadataResourceProcessor) {
-    // @todo check that exercise result exercise is in program sessio
+
+    $embedded_entity_wrapper = $controller->processValues($embedded_entity_type, $values, 'create');
+
+    // @todo check that exercise result exercise is in program session
     if ($cardinality == 1) {
-      $wrapper->{$name} = $controller->processValues($embedded_entity_type, $values, 'create');
+      $wrapper->{$name} = $embedded_entity_wrapper->value();
     }
     else {
-      $wrapper->{$name}[] = $controller->processValues($embedded_entity_type, $values, 'create');
+      $wrapper->{$name}[] = $embedded_entity_wrapper->value();
     }
     $wrapper->save();
     return $controller->formatter->formatWrapper($wrapper, NULL, 'retrieve');
   }
   else {
+    watchdog('services_mongo_entity', 'Error adding !name to !entity_type', array('!name' => $name, '!entity_type' => $entity_type), WATCHDOG_ERROR);
     services_error(t('Error adding !embedded_entity_type to !entity_type', array('!embedded_entity_type' => $embedded_entity_type, '!entity_type' => $entity_type)), 500);
   }
 
