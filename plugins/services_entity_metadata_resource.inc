@@ -529,7 +529,10 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
 
         case 'retrieve':
         case 'index':
-          return $property->access('view');
+          // @todo check if the property exists, i guess?
+          if ($property->value()) {
+            return $property->access('view');
+          }
       }
     }
     catch (EntityMetaDataWrapperException $e) {
