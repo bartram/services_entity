@@ -84,11 +84,22 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
   public function index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction) {
 
     // @todo move this to a custom controller
-    $query = new EntityFieldQuery;
+    // Build an EFQ based on the arguments.
+    $query = new EntityFieldQuery();
     $query->entityCondition('entity_type', $entity_type);
+
+    if (!empty($parameters)) {
+      foreach ($parameters as $field => $value) {
+        $this->propertyQueryOperation($entity_type, $query, 'Condition', $field, $value);
+      }
+    }
+    if ($sort != '') {
+      $direction = ($direction == 'DESC') ? 'DESC' : 'ASC'; // Ensure a valid direction
+      $this->propertyQueryOperation($entity_type, $query, 'OrderBy', $sort, $direction);
+    }
+
     $query->count();
-    $result = $query->execute();
-    drupal_add_http_header('X-Resource-Count', $result);
+    drupal_add_http_header('X-Resource-Count', $query->execute());
 
     // Call the parent method, which takes care of access control.
     $entities = parent::index($entity_type, '*', $parameters, $page, $pagesize, $sort, $direction);
