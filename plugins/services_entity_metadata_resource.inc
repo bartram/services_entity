@@ -525,7 +525,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
           }
 
           // Finally, use the property access.
-          return $property->access('edit');
+          return $property->access($op == 'create' ? 'create' : 'edit');
 
         case 'retrieve':
         case 'index':
