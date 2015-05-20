@@ -200,7 +200,7 @@ function services_entityreference_services_resources() {
  */
 function _services_entityreference_relationship_query($entity_type, $field_name, $target_id, $fields, $parameters, $page, $pagesize, $sort, $direction) {
   $parameters[$field_name] = $target_id;
-  $resourceclass = variable_get('services_entity_resource_class', 'ServicesEntityResourceController');
+  $resourceclass = _services_entity_get_controller($entity_type);
   $resource = new $resourceclass;
   return $resource->index($entity_type, $fields, $parameters, $page, $pagesize, $sort, $direction);
 }
