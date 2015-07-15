@@ -541,7 +541,7 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
         case 'retrieve':
         case 'index':
           // @todo check if the property exists, i guess?
-          if ($property->value()) {
+          if ($property->value() !== NULL) {
             return $property->access('view');
           }
       }
