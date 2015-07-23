@@ -230,6 +230,8 @@ class ServicesEntityMetadataResourceController extends ServicesEntityResourceCon
    */
   protected function getResourceReference($resource, $id) {
 
+    module_load_include('inc', 'services', 'includes/services.runtime');
+
     if ($resource == 'file') {
 
       $file = file_load($id);
