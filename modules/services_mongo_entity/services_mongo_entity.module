@@ -301,9 +301,11 @@ function _services_mongo_entity_resource_callback($entity_type, $entity_id, $emb
 
 }
 
-function _services_mongo_entity_access_callback($op, $entity_type, $entity_id = NULL) {
+function _services_mongo_entity_access_callback($op, $entity_type, $args = NULL) {
 
-  if ($entity_id) {
+  // $args is the appended arguments. if $args is set, $args[1] is the entity ID
+  if ($args) {
+    $entity_id = $args[1];
     $entity = entity_load_single($entity_type, $entity_id);
     return entity_access($op, $entity_type, $entity_id);
   }
